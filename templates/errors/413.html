@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Файл слишком большой - СКР Digital{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 100px 20px;">
+    <h1 style="font-size: 120px; margin: 0; color: #e67e22;">413</h1>
+    <h2 style="font-size: 32px; margin: 20px 0; color: #1A1A1A;">Файл слишком большой</h2>
+    <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        Размер загружаемого файла превышает максимально допустимый (500 МБ).<br>
+        Пожалуйста, выберите файл меньшего размера.
+    </p>
+    <a href="javascript:history.back()" class="btn" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; margin-right: 10px;">
+        Назад
+    </a>
+    <a href="{{ url_for('home') }}" class="btn" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600;">
+        На главную
+    </a>
+</div>
+{% endblock %}
+

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Создать тест - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 700px; margin: 60px auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=course.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 10px; color: #081844;">Создать тест</h1>
+        <p style="color: #666; margin-bottom: 30px;">Курс: {{ course.title }}</p>
+        
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название теста *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       required 
+                       minlength="5"
+                       placeholder="Например: Проверочный тест по основам Python"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="max_attempts" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Максимум попыток</label>
+                <input type="number" 
+                       id="max_attempts" 
+                       name="max_attempts" 
+                       min="0"
+                       value="0"
+                       placeholder="0 = неограниченно"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Укажите 0 для неограниченного количества попыток</small>
+            </div>
+            
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 4px solid #12A0F4;">
+                <p style="margin: 0; color: #1976d2; font-size: 14px;">
+                    💡 После создания теста вы сможете добавить вопросы с вариантами ответов.
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Создать тест
+                </button>
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-group input:focus {
+    outline: none;
+    border-color: #12A0F4;
+}
+</style>
+{% endblock %}
+

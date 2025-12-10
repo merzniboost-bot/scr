@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Управление группами - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">Управление группами</h1>
+                <p style="color: #666;">Всего групп: {{ groups_data|length }}</p>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <button onclick="showAddGroupModal()" 
+                        style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                    + Создать группу
+                </button>
+                <a href="{{ url_for('admin.dashboard') }}" 
+                   style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center;"
+                   onmouseover="this.style.background='#e0e0e0';"
+                   onmouseout="this.style.background='#f5f5f5';">
+                    ← Назад к панели
+                </a>
+            </div>
+        </div>
+        
+        <!-- Список групп -->
+        {% if groups_data %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+            {% for item in groups_data %}
+            <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; border: 2px solid #e0e0e0; transition: all 0.2s ease;"
+                 onmouseover="this.style.borderColor='#12A0F4'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.1)';"
+                 onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0; color: #081844; font-size: 20px;">{{ item.group.name }}</h3>
+                        {% if item.group.description %}
+                        <p style="margin: 0; color: #666; font-size: 14px;">{{ item.group.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="background: #e3f2fd; border-radius: 10px; padding: 12px; margin-bottom: 15px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #1976d2; margin-bottom: 5px;">{{ item.student_count }}</div>
+                    <div style="color: #666; font-size: 14px;">Студент{{ 'ов' if item.student_count != 1 else '' }}</div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="{{ url_for('admin.group_students', group_id=item.group.id) }}" 
+                       style="flex: 1; padding: 10px 20px; background: #12A0F4; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; text-align: center; transition: all 0.2s ease;"
+                       onmouseover="this.style.background='#0d7bc4';"
+                       onmouseout="this.style.background='#12A0F4';">
+                        👥 Студенты
+                    </a>
+                    <button onclick="showEditGroupModal({{ item.group.id }}, '{{ item.group.name }}', '{{ item.group.description or '' }}')" 
+                            style="flex: 1; padding: 10px 20px; background: #ff9800; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                            onmouseover="this.style.background='#f57c00';"
+                            onmouseout="this.style.background='#ff9800';">
+                        ✏️ Редактировать
+                    </button>
+                    {% if item.student_count == 0 %}
+                    <form method="post" action="{{ url_for('admin.delete_group', group_id=item.group.id) }}" 
+                          style="display: inline; flex: 1;"
+                          onsubmit="return confirm('Вы уверены, что хотите удалить группу {{ item.group.name }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" 
+                                style="width: 100%; padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.background='#d32f2f';"
+                                onmouseout="this.style.background='#f44336';">
+                            🗑️ Удалить
+                        </button>
+                    </form>
+                    {% else %}
+                    <button disabled
+                            style="flex: 1; padding: 10px 20px; background: #e0e0e0; color: #999; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: not-allowed;"
+                            title="Невозможно удалить группу с студентами">
+                        🗑️ Удалить
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; color: #666; font-size: 12px; text-align: center;">
+                    Создана: {{ item.group.created_at|datetime }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 15px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+            <h3 style="color: #081844; margin-bottom: 10px;">Группы не найдены</h3>
+            <p style="color: #666; margin-bottom: 30px;">Создайте первую группу для организации студентов</p>
+            <button onclick="showAddGroupModal()" 
+                    style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                + Создать первую группу
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно создания группы -->
+<div id="addGroupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: #081844; font-size: 24px;">Создать группу</h2>
+            <button onclick="hideAddGroupModal()" 
+                    style="background: none; border: none; font-size: 32px; color: #666; cursor: pointer; padding: 0; width: 32px; height: 32px; line-height: 32px;"
+                    onmouseover="this.style.color='#333';"
+                    onmouseout="this.style.color='#666';">
+                &times;
+            </button>
+        </div>
+        
+        <form method="post" action="{{ url_for('admin.add_group') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название группы *</label>
+                <input type="text" 
+                       name="name" 
+                       required
+                       placeholder="Например: Группа 101"
+                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Описание</label>
+                <textarea name="description" 
+                          rows="3"
+                          placeholder="Описание группы (необязательно)"
+                          style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                <button type="button" 
+                        onclick="hideAddGroupModal()"
+                        style="padding: 12px 30px; background: #f5f5f5; color: #333; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                        onmouseover="this.style.background='#e0e0e0';"
+                        onmouseout="this.style.background='#f5f5f5';">
+                    Отмена
+                </button>
+                <button type="submit" 
+                        style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                    ✓ Создать
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования группы -->
+<div id="editGroupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: #081844; font-size: 24px;">Редактировать группу</h2>
+            <button onclick="hideEditGroupModal()" 
+                    style="background: none; border: none; font-size: 32px; color: #666; cursor: pointer; padding: 0; width: 32px; height: 32px; line-height: 32px;"
+                    onmouseover="this.style.color='#333';"
+                    onmouseout="this.style.color='#666';">
+                &times;
+            </button>
+        </div>
+        
+        <form id="editGroupForm" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название группы *</label>
+                <input type="text" 
+                       id="editGroupName"
+                       name="name" 
+                       required
+                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Описание</label>
+                <textarea id="editGroupDescription"
+                          name="description" 
+                          rows="3"
+                          style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                <button type="button" 
+                        onclick="hideEditGroupModal()"
+                        style="padding: 12px 30px; background: #f5f5f5; color: #333; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                        onmouseover="this.style.background='#e0e0e0';"
+                        onmouseout="this.style.background='#f5f5f5';">
+                    Отмена
+                </button>
+                <button type="submit" 
+                        style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                    ✓ Сохранить
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddGroupModal() {
+    document.getElementById('addGroupModal').style.display = 'flex';
+}
+
+function hideAddGroupModal() {
+    document.getElementById('addGroupModal').style.display = 'none';
+}
+
+function showEditGroupModal(groupId, name, description) {
+    document.getElementById('editGroupName').value = name;
+    document.getElementById('editGroupDescription').value = description || '';
+    document.getElementById('editGroupForm').action = '{{ url_for("admin.edit_group", group_id=0) }}'.replace('0', groupId);
+    document.getElementById('editGroupModal').style.display = 'flex';
+}
+
+function hideEditGroupModal() {
+    document.getElementById('editGroupModal').style.display = 'none';
+}
+
+// Закрытие модальных окон при клике вне их
+window.onclick = function(event) {
+    const addModal = document.getElementById('addGroupModal');
+    const editModal = document.getElementById('editGroupModal');
+    if (event.target == addModal) {
+        hideAddGroupModal();
+    }
+    if (event.target == editModal) {
+        hideEditGroupModal();
+    }
+}
+</script>
+
+<style>
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты поиска - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 60px auto; padding: 40px 20px;">
+    <div style="margin-bottom: 40px;">
+        <h1 style="font-size: 42px; margin-bottom: 10px; color: #081844;">Результаты поиска</h1>
+        <p style="color: #666; font-size: 18px;">По запросу: <strong>"{{ query }}"</strong></p>
+    </div>
+    
+    {% if courses_data %}
+        <div class="courses-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+            {% for course_data in courses_data %}
+            <div class="course-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; overflow: hidden; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); transition: transform 0.3s;">
+                {% if course_data.course.preview_filename %}
+                    <img src="{{ url_for('lessons.serve_file', filename=course_data.course.preview_filename) }}" 
+                         alt="{{ course_data.course.title }}"
+                         style="width: 100%; height: 200px; object-fit: cover;">
+                {% else %}
+                    <img src="{{ url_for('static', filename='img/course-default.svg') }}" 
+                         alt="{{ course_data.course.title }}"
+                         style="width: 100%; height: 200px; object-fit: cover;">
+                {% endif %}
+                
+                <div style="padding: 25px;">
+                    <div style="font-size: 12px; color: #12A0F4; font-weight: 600; margin-bottom: 10px; text-transform: uppercase;">ОБУЧЕНИЕ</div>
+                    <h3 style="font-size: 20px; margin-bottom: 10px; color: #081844;">{{ course_data.course.title }}</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                        {{ course_data.course.description[:100] + '...' if course_data.course.description and course_data.course.description|length > 100 else course_data.course.description or 'Описание отсутствует' }}
+                    </p>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 14px; color: #666;">
+                        <span>📖 {{ course_data.lesson_count }} урок{{ 'ов' if course_data.lesson_count != 1 else '' }}</span>
+                        {% if course_data.test_count > 0 %}
+                            <span>📝 {{ course_data.test_count }} тест{{ 'ов' if course_data.test_count != 1 else '' }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if current_user and course_data.progress %}
+                    <div style="margin-bottom: 20px;">
+                        <div style="height: 6px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+                            <div style="height: 100%; background: linear-gradient(90deg, #12A0F4, #0A5D8E); width: {{ course_data.progress.percent }}%;"></div>
+                        </div>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">{{ course_data.progress.percent }}% завершено</p>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('courses.detail', course_id=course_data.course.id) }}" 
+                       style="display: block; padding: 12px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        {% if current_user and course_data.progress and course_data.progress.percent > 0 %}
+                            Продолжить →
+                        {% else %}
+                            Перейти к курсу →
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 80px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 20px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
+            <h2 style="margin-bottom: 15px; color: #081844;">Ничего не найдено</h2>
+            <p style="color: #666; margin-bottom: 30px;">По запросу "{{ query }}" ничего не найдено</p>
+            <a href="{{ url_for('courses.list') }}" 
+               class="btn" 
+               style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600;">
+                Вернуться к курсам
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+</style>
+{% endblock %}
+

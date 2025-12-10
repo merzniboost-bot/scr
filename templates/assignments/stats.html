@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика: {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 60px auto; padding: 0 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <!-- Навигация -->
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('assignments.view_submissions', assignment_id=assignment.id) }}" 
+               style="color: #12A0F4; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                ← Вернуться к работам
+            </a>
+        </div>
+        
+        <h1 style="font-size: 32px; font-weight: 700; color: #081844; margin-bottom: 10px;">
+            📊 Статистика по группам
+        </h1>
+        <p style="color: #666; margin-bottom: 30px;">
+            Задание: <strong>{{ assignment.title }}</strong>
+        </p>
+        
+        {% if groups_stats %}
+        <div style="display: grid; gap: 20px;">
+            {% for item in groups_stats %}
+            <div style="padding: 25px; background: #f8f9fa; border-radius: 15px; border-left: 5px solid #12A0F4;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    <h3 style="font-size: 20px; font-weight: 600; color: #081844; margin: 0;">
+                        {{ item.group.name if item.group else item.group_name }}
+                    </h3>
+                    <span style="font-size: 24px; font-weight: 700; color: #12A0F4;">
+                        {{ item.submission_rate }}%
+                    </span>
+                </div>
+                
+                <!-- Прогресс бар -->
+                <div style="height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
+                    <div style="height: 100%; width: {{ item.submission_rate }}%; background: linear-gradient(90deg, #12A0F4, #0A5D8E); border-radius: 6px;"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+                    <div style="text-align: center; padding: 15px; background: white; border-radius: 10px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #081844;">{{ item.total_students }}</div>
+                        <div style="font-size: 13px; color: #666;">Всего</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: white; border-radius: 10px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">{{ item.submitted }}</div>
+                        <div style="font-size: 13px; color: #666;">Сдали</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: white; border-radius: 10px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #f44336;">{{ item.not_submitted }}</div>
+                        <div style="font-size: 13px; color: #666;">Не сдали</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: white; border-radius: 10px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #2196F3;">{{ item.reviewed }}</div>
+                        <div style="font-size: 13px; color: #666;">Проверено</div>
+                    </div>
+                    {% if item.avg_grade %}
+                    <div style="text-align: center; padding: 15px; background: white; border-radius: 10px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #FF9800;">{{ item.avg_grade }}</div>
+                        <div style="font-size: 13px; color: #666;">Ср. оценка</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if item.group %}
+                <div style="margin-top: 15px; text-align: right;">
+                    <a href="{{ url_for('assignments.view_submissions', assignment_id=assignment.id, group_id=item.group.id) }}"
+                       style="color: #12A0F4; text-decoration: none; font-size: 14px;">
+                        Смотреть работы группы →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
+            <h3 style="color: #081844; margin-bottom: 10px;">Нет данных для статистики</h3>
+            <p style="color: #666;">В системе нет групп или студентов</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

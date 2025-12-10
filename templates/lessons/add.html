@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить урок - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=course.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 10px; color: #081844;">Добавить урок</h1>
+        <p style="color: #666; margin-bottom: 30px;">Курс: {{ course.title }}</p>
+        
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название урока *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       required 
+                       minlength="3"
+                       placeholder="Например: Введение в Python"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="order" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Порядковый номер *</label>
+                <input type="number" 
+                       id="order" 
+                       name="order" 
+                       required 
+                       min="1"
+                       value="{{ next_order }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Определяет порядок урока в курсе</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="content" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Содержание урока</label>
+                <textarea id="content" 
+                          name="content" 
+                          rows="10"
+                          placeholder="Опишите содержание урока, добавьте теорию, примеры..."
+                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="video" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Видео урока</label>
+                <input type="file" 
+                       id="video" 
+                       name="video" 
+                       accept="video/*"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Форматы: MP4, AVI, MOV, WEBM. Максимальный размер: 500 МБ</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="file" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Дополнительные материалы</label>
+                <input type="file" 
+                       id="file" 
+                       name="file" 
+                       accept=".pdf,.doc,.docx,.txt,.zip,.rar,.ppt,.pptx"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">PDF, DOC, ZIP и другие файлы для скачивания</small>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Создать урок
+                </button>
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #12A0F4;
+}
+
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.wrapper {
+    min-height: 100vh;
+}
+
+.container {
+    flex: 1;
+}
+
+</style>
+{% endblock %}
+

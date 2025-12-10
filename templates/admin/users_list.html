@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Управление пользователями - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">Управление пользователями</h1>
+                <p style="color: #666;">Всего пользователей: {{ users|length }}</p>
+            </div>
+            <a href="{{ url_for('admin.dashboard') }}" 
+               style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease;"
+               onmouseover="this.style.background='#e0e0e0';"
+               onmouseout="this.style.background='#f5f5f5';">
+                ← Назад к панели
+            </a>
+        </div>
+        
+        <!-- Фильтры и поиск -->
+        <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 30px;">
+            <form method="get" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: end;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px;">Поиск</label>
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}"
+                           placeholder="Имя, email, username..."
+                           style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                </div>
+                
+                <div style="min-width: 150px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px;">Роль</label>
+                    <select name="role" 
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: white;">
+                        <option value="">Все роли</option>
+                        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Администратор</option>
+                        <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Преподаватель</option>
+                        <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Студент</option>
+                    </select>
+                </div>
+                
+                <div style="min-width: 150px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px;">Статус</label>
+                    <select name="status" 
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: white;">
+                        <option value="">Все</option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Подтвержденные</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Ожидают</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" 
+                            style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                        🔍 Поиск
+                    </button>
+                    {% if search or role_filter or status_filter %}
+                    <a href="{{ url_for('admin.users_list') }}" 
+                       style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center;"
+                       onmouseover="this.style.background='#e0e0e0';"
+                       onmouseout="this.style.background='#f5f5f5';">
+                        ✕ Сбросить
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        
+        <!-- Таблица пользователей -->
+        {% if users %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                        <th style="padding: 15px; text-align: left; color: #081844; font-weight: 600;">ID</th>
+                        <th style="padding: 15px; text-align: left; color: #081844; font-weight: 600;">Пользователь</th>
+                        <th style="padding: 15px; text-align: left; color: #081844; font-weight: 600;">Email</th>
+                        <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Роль</th>
+                        <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Статус</th>
+                        <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Группа</th>
+                        <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Дата регистрации</th>
+                        <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.2s ease;"
+                        onmouseover="this.style.background='#f8f9fa';"
+                        onmouseout="this.style.background='white';">
+                        <td style="padding: 15px; color: #666; font-size: 14px;">#{{ user.id }}</td>
+                        <td style="padding: 15px;">
+                            <div style="font-weight: 600; color: #081844; margin-bottom: 3px;">{{ user.fullname }}</div>
+                            <div style="color: #666; font-size: 14px;">@{{ user.username }}</div>
+                        </td>
+                        <td style="padding: 15px; color: #333;">{{ user.email }}</td>
+                        <td style="padding: 15px; text-align: center;">
+                            <span style="padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;
+                                {% if user.role == 'admin' %}background: #ffebee; color: #c62828;
+                                {% elif user.role == 'teacher' %}background: #e3f2fd; color: #1976d2;
+                                {% else %}background: #e8f5e9; color: #388e3c;{% endif %}">
+                                {% if user.role == 'admin' %}Админ
+                                {% elif user.role == 'teacher' %}Преподаватель
+                                {% else %}Студент{% endif %}
+                            </span>
+                        </td>
+                        <td style="padding: 15px; text-align: center;">
+                            {% if user.approved %}
+                            <span style="padding: 6px 12px; background: #e8f5e9; color: #388e3c; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                                ✓ Подтвержден
+                            </span>
+                            {% else %}
+                            <span style="padding: 6px 12px; background: #fff3e0; color: #f57c00; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                                ⏳ Ожидает
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px; text-align: center; color: #666; font-size: 14px;">
+                            {% if user.group_rel %}
+                                {{ user.group_rel.name }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px; text-align: center; color: #666; font-size: 14px;">{{ user.created_at|datetime }}</td>
+                        <td style="padding: 15px; text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                {% if not user.approved %}
+                                <form method="post" action="{{ url_for('admin.approve_user', user_id=user.id) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" 
+                                            style="padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                                            onmouseover="this.style.background='#388e3c';"
+                                            onmouseout="this.style.background='#4caf50';"
+                                            title="Подтвердить пользователя">
+                                        ✓
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                <form method="post" action="{{ url_for('admin.change_user_role', user_id=user.id) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <select name="role" 
+                                            onchange="this.form.submit()"
+                                            style="padding: 6px 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 12px; cursor: pointer; background: white;">
+                                        <option value="student" {% if user.role == 'student' %}selected{% endif %}>Студент</option>
+                                        <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Преподаватель</option>
+                                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Админ</option>
+                                    </select>
+                                </form>
+                                
+                                {% if user.id != current_user.id %}
+                                <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('Вы уверены, что хотите удалить пользователя {{ user.fullname }}? Это действие нельзя отменить.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" 
+                                            style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                                            onmouseover="this.style.background='#d32f2f';"
+                                            onmouseout="this.style.background='#f44336';"
+                                            title="Удалить пользователя">
+                                        🗑️
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 15px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+            <h3 style="color: #081844; margin-bottom: 10px;">Пользователи не найдены</h3>
+            <p style="color: #666;">Попробуйте изменить параметры фильтрации</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    table {
+        font-size: 14px;
+    }
+    
+    th, td {
+        padding: 10px !important;
+    }
+    
+    form {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

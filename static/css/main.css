@@ -1,0 +1,341 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #007BFF;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(to right, #12A0F4, #0A5D8E);
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.form-container {
+    background-color: #fff;
+    padding: 20px 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.9);
+    width: 400px;
+    position: relative;
+    height: 720px;
+    top: 120px;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+/* Кнопки Вход/Регистрация */
+.auth-buttons {
+    display: flex;
+    width: 100%;
+}
+
+.auth-button {
+    background-color: transparent;
+    border: none;
+    color: #A6A6A6;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 12px 20px;
+    font-weight: bold;
+    border-radius: 8px;
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+.auth-button.active {
+    color: #007BFF;
+    background-color: #FFFFFF;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007BFF;
+}
+
+.checkbox-group {
+    position: relative;
+    margin-top: 10px;
+    left: 30px;
+}
+
+.checkbox-group input {
+    position: relative;
+    transform: scale(1.2);
+    top: 20px;
+    left: -225px;
+}
+
+.submit-button {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    padding: 15px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+    background-color: #0056b3;
+}
+
+.role-selector {
+    display: flex;
+    justify-content: space-around;
+    margin: 25px 0;
+}
+
+.role-option {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+    left: -50px;
+}
+
+.role-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #e0e0e0;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.role-btn.active {
+    background-color: #A8DCFF;
+    border-color: #007BFF;
+}
+
+.role-btn.active::after {
+    color: #007BFF;
+    font-size: 14px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.role-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: color 0.3s ease;
+    position: relative;
+    top: -20px;
+    left: 30px;
+}
+
+.role-btn.active + .role-text {
+    color: #007BFF;
+    font-weight: 600;
+}
+
+.hidden {
+    display: none;
+}
+
+.speciol {
+    position: relative;
+    top: -20px;
+}
+
+/* Стили для выпадающих списков */
+.input-with-dropdown {
+    position: relative;
+    display: flex;
+}
+
+.input-with-dropdown input {
+    flex: 1;
+    padding-right: 40px;
+}
+
+.dropdown-button {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #A6A6A6;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-button:hover {
+    background-color: #f0f0f0;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    margin-top: 5px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #007BFF;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.form {
+    height: auto; /* Автоматическая высота в зависимости от содержимого */
+    min-height: 200px; /* Минимальная высота */
+}
+
+.form-container {
+    background-color: #fff;
+    padding: 20px 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.9);
+    width: 400px;
+    position: relative;
+    height: auto; /* Меняем на auto */
+    top: 120px;
+    min-height: 500px; /* Добавляем минимальную высоту */
+
+}
+
+
+/* Футер формы */
+.form-footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #A5A5A5;
+    font-size: 14px;
+}
+
+.form-footer a {
+    color: #119FF3;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Disabled элемент в dropdown */
+.dropdown-item.disabled {
+    color: #ccc;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Анимация появления формы */
+.form {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Улучшение checkbox */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.checkbox-group label {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Ошибки валидации */
+input:invalid:not(:placeholder-shown) {
+    border-color: #e74c3c;
+}
+
+input:valid:not(:placeholder-shown) {
+    border-color: #27ae60;
+}
+
+/* Кнопки авторизации как ссылки */
+.auth-button {
+    text-decoration: none;
+    display: inline-block;
+}

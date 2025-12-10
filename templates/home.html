@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="hero container">
+    <div class="hero--info">
+        <h1>Обучение онлайн в любое время</h1>
+        <p>Развивайте свои навыки с лучшими курсами от преподавателей Симферопольского колледжа радиоэлектроники. Учитесь в удобном темпе и получайте сертификаты.</p>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('courses.list') }}" class="btn">Перейти к курсам</a>
+        {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn">Запишись на курс</a>
+        {% endif %}
+    </div>
+    <img src="{{ url_for('static', filename='img/chelVR.svg') }}" alt="Студент в VR">
+</div>
+
+{% if current_user.is_authenticated %}
+<!-- Секция "Мой процесс" -->
+<div class="my-process-section container">
+    <div class="my-process-header">
+        <h2>Мой процесс</h2>
+        <a href="{{ url_for('user.progress') }}" class="view-all-link">Посмотреть все →</a>
+    </div>
+    
+    <div class="my-process-content">
+        <!-- Статистика -->
+        <div class="process-stats">
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ my_courses_count|default(0) }}</div>
+                    <div class="stat-label">Активных курсов</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ completed_lessons|default(0) }}</div>
+                    <div class="stat-label">Завершено уроков</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ overall_progress|default(0) }}%</div>
+                    <div class="stat-label">Общий прогресс</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Активные курсы -->
+        <div class="active-courses">
+            <h3>Активные курсы</h3>
+            {% if active_courses %}
+                <div class="active-courses-list">
+                    {% for course_item in active_courses[:3] %}
+                    <div class="active-course-card">
+                        <div class="course-header-mini">
+                            {% if course_item.course.preview_filename %}
+                                <img src="{{ url_for('lessons.serve_file', filename=course_item.course.preview_filename) }}" alt="{{ course_item.course.title }}">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='img/course-default.svg') }}" alt="{{ course_item.course.title }}">
+                            {% endif %}
+                            <div class="course-info-mini">
+                                <h4>{{ course_item.course.title }}</h4>
+                                <p>{{ course_item.completed_lessons|default(0) }} из {{ course_item.total_lessons|default(0) }} уроков</p>
+                            </div>
+                        </div>
+                        <div class="course-progress-mini">
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill-mini" style="width: {{ course_item.progress_percent|default(0) }}%;"></div>
+                            </div>
+                            <span class="progress-percent-mini">{{ course_item.progress_percent|default(0) }}%</span>
+                        </div>
+                        <a href="{{ url_for('courses.detail', course_id=course_item.course.id) }}" class="continue-btn">
+                            {% if course_item.progress_percent|default(0) > 0 %}
+                                Продолжить →
+                            {% else %}
+                                Начать →
+                            {% endif %}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-process">
+                    <div class="empty-icon">📖</div>
+                    <p>У вас пока нет активных курсов</p>
+                    <a href="{{ url_for('courses.list') }}" class="start-learning-btn">Начать обучение</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="courses-controls-wrapper">
+    <div class="courses-controls container">
+        <div class="search-box">
+            <form method="get" action="{{ url_for('courses.list') }}">
+                <input type="text" name="search" placeholder="Поиск курсов..." value="{{ request.args.get('search', '') }}">
+            </form>
+        </div>
+        <div class="courses-tabs">
+            <ul>
+                <li class="active"><a href="{{ url_for('courses.list') }}">Все курсы</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('courses.list', filter='my') }}">Мои курсы</a></li>
+                    <li><a href="{{ url_for('user.favorites') }}">Избранное</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="courses-container container">
+    {% if courses %}
+        {% for course_data in courses %}
+        <div class="course-card">
+            {% if course_data.course.preview_filename %}
+                <img src="{{ url_for('lessons.serve_file', filename=course_data.course.preview_filename) }}" alt="{{ course_data.course.title }}">
+            {% else %}
+                <img src="{{ url_for('static', filename='img/course-default.svg') }}" alt="{{ course_data.course.title }}">
+            {% endif %}
+
+            <div class="course-category">
+                {% if 'python' in course_data.course.title.lower() %}
+                    ПРОГРАММИРОВАНИЕ
+                {% elif 'javascript' in course_data.course.title.lower() or 'js' in course_data.course.title.lower() %}
+                    ПРОГРАММИРОВАНИЕ
+                {% elif 'html' in course_data.course.title.lower() or 'css' in course_data.course.title.lower() %}
+                    ВЕБ-РАЗРАБОТКА
+                {% elif 'данн' in course_data.course.title.lower() or 'анализ' in course_data.course.title.lower() %}
+                    АНАЛИЗ ДАННЫХ
+                {% elif 'дизайн' in course_data.course.title.lower() %}
+                    ДИЗАЙН
+                {% else %}
+                    ОБУЧЕНИЕ
+                {% endif %}
+            </div>
+
+            <h3 class="course-title">{{ course_data.course.title }}</h3>
+
+            <p class="course-description">
+                {{ course_data.course.description[:120] + '...' if course_data.course.description and course_data.course.description|length > 120 else course_data.course.description or 'Описание отсутствует' }}
+            </p>
+
+            <div class="course-meta">
+                <span>📖 {{ course_data.lesson_count }} урок{{ 'ов' if course_data.lesson_count != 1 else '' }}</span>
+                {% if course_data.test_count > 0 %}
+                    <span>📝 {{ course_data.test_count }} тест{{ 'ов' if course_data.test_count != 1 else '' }}</span>
+                {% endif %}
+            </div>
+
+            {% if current_user.is_authenticated and course_data.progress %}
+            <div class="course-progress">
+                <div class="progress-bar">
+                    <div class='progress-fill" style="width: {{ course_data.progress.percent }}%;'>
+                        {{ course_data.progress.percent }}%
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="course-footer">
+                <a href="{{ url_for('courses.detail', course_id=course_data.course.id) }}" class="enroll-btn">
+                    {% if current_user.is_authenticated and course_data.progress and course_data.progress.percent > 0 %}
+                        Продолжить →
+                    {% else %}
+                        Перейти к курсу →
+                    {% endif %}
+                </a>
+
+                {% if current_user.is_authenticated %}
+                <form method="post" action="{{ url_for('courses.toggle_favorite', course_id=course_data.course.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="favorite-btn {{ 'active' if course_data.is_favorite }}" title="Добавить в избранное">
+                        {% if course_data.is_favorite %}★{% else %}☆{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Если курсов нет в БД, показываем демо-курсы -->
+        <div class="course-card">
+            <img src="static\img\JavaScript.svg" alt="Основы Python">
+            <div class="course-category">ПРОГРАММИРОВАНИЕ</div>
+            <h3 class="course-title">Основы Python</h3>
+            <p class="course-description">Изучите основы программирования на Python: переменные, циклы, функции и ООП.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="course-card">
+            <img src="static\img\JavaScript.svg" alt="JavaScript">
+            <div class="course-category">ПРОГРАММИРОВАНИЕ</div>
+            <h3 class="course-title">JavaScript: от основ до продвинутого</h3>
+            <p class="course-description">Полный курс по JavaScript: синтаксис, DOM, асинхронность и современные фреймворки.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="course-card">
+            <img src="static\img\JavaScript.svg" alt="HTML и CSS">
+            <div class="course-category">ВЕБ-РАЗРАБОТКА</div>
+            <h3 class="course-title">HTML и CSS для начинающих</h3>
+            <p class="course-description">Научитесь создавать современные веб-сайты с нуля используя языки HTML5 и CSS3.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="course-card">
+            <img src="{{ url_for('static', filename='img/OsnoviBD.svg') }}" alt="Анализ данных">
+            <div class="course-category">АНАЛИЗ ДАННЫХ</div>
+            <h3 class="course-title">Основы анализа данных</h3>
+            <p class="course-description">Изучите Python для анализа данных: Pandas, NumPy, визуализация и статистика.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="course-card">
+            <img src="{{ url_for('static', filename='img/OsnoviGrDisign.svg') }}" alt="Графический дизайн">
+            <div class="course-category">ДИЗАЙН</div>
+            <h3 class="course-title">Основы графического дизайна</h3>
+            <p class="course-description">Познакомьтесь с принципами дизайна, композицией и работой с ПО - Figma, Adobe Photoshop.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="course-card">
+            <img src="{{ url_for('static', filename='img/razrabotkamobpril.svg') }}" alt="Мобильные приложения">
+            <div class="course-category">ПРОГРАММИРОВАНИЕ</div>
+            <h3 class="course-title">Разработка мобильных приложений</h3>
+            <p class="course-description">Создавайте кроссплатформенные приложения с React Native и Flutter.</p>
+            <div class="course-footer">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('courses.list') }}" class="enroll-btn">Смотреть курсы →</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn">Записаться →</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

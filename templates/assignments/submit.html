@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ assignment.title }} - Загрузить работу{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 0 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <!-- Навигация -->
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('lessons.detail', lesson_id=assignment.lesson_id) }}"
+               style="color: #12A0F4; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                ← Вернуться к уроку
+            </a>
+        </div>
+
+        <h1 style="font-size: 32px; font-weight: 700; color: #081844; margin-bottom: 10px;">
+            📤 {{ assignment.title }}
+        </h1>
+
+        <!-- Описание задания -->
+        {% if assignment.description %}
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #12A0F4;">
+            <h3 style="font-size: 16px; font-weight: 600; color: #081844; margin-bottom: 10px;">Описание задания:</h3>
+            <p style="color: #555; line-height: 1.6; white-space: pre-wrap;">{{ assignment.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Информация -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            {% if assignment.deadline %}
+            <div style="padding: 15px; background: {{ '#fff3e0' if assignment.is_overdue() else '#e8f5e9' }}; border-radius: 12px;">
+                <div style="font-size: 13px; color: #666; margin-bottom: 5px;">Дедлайн</div>
+                <div style="font-weight: 600; color: {{ '#f57c00' if assignment.is_overdue() else '#2e7d32' }};">
+                    {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') }}
+                    {% if assignment.is_overdue() %}
+                    <span style="color: #d32f2f;">⚠️ Просрочено</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="padding: 15px; background: #e3f2fd; border-radius: 12px;">
+                <div style="font-size: 13px; color: #666; margin-bottom: 5px;">Макс. размер файла</div>
+                <div style="font-weight: 600; color: #1976d2;">{{ assignment.max_file_size_mb }} МБ</div>
+            </div>
+
+            <div style="padding: 15px; background: #f3e5f5; border-radius: 12px;">
+                <div style="font-size: 13px; color: #666; margin-bottom: 5px;">Форматы</div>
+                <div style="font-weight: 600; color: #7b1fa2; font-size: 14px;">{{ assignment.allowed_extensions }}</div>
+            </div>
+        </div>
+
+        <!-- Существующая работа -->
+        {% if submission %}
+        <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #4CAF50;">
+            <h3 style="font-size: 18px; font-weight: 600; color: #2e7d32; margin-bottom: 15px;">
+                ✓ Вы уже отправили работу
+            </h3>
+            <div style="display: grid; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #666;">Файл:</span>
+                    <strong>{{ submission.original_filename }}</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #666;">Отправлено:</span>
+                    <strong>{{ submission.submitted_at.strftime('%d.%m.%Y %H:%M') }}</strong>
+                    {% if submission.is_late() %}
+                    <span style="background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 10px; font-size: 12px;">С опозданием</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #666;">Статус:</span>
+                    {% if submission.status == 'submitted' %}
+                    <span style="background: #fff3e0; color: #f57c00; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">На проверке</span>
+                    {% elif submission.status == 'approved' %}
+                    <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">✓ Принято</span>
+                    {% elif submission.status == 'rejected' %}
+                    <span style="background: #ffebee; color: #c62828; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">✗ Отклонено</span>
+                    {% else %}
+                    <span style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">Проверено</span>
+                    {% endif %}
+                </div>
+                {% if submission.grade is not none %}
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #666;">Оценка:</span>
+                    <strong style="font-size: 20px; color: {{ '#4CAF50' if submission.grade >= 60 else '#f44336' }};">{{ submission.grade }}/100</strong>
+                </div>
+                {% endif %}
+                {% if submission.feedback %}
+                <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 10px;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">Комментарий преподавателя:</div>
+                    <p style="color: #333; line-height: 1.5;">{{ submission.feedback }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Форма загрузки -->
+        <form method="post" enctype="multipart/form-data" style="display: grid; gap: 25px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div>
+                <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                    {{ 'Загрузить новую версию' if submission else 'Загрузить файл работы' }} *
+                </label>
+                <div style="border: 3px dashed #e0e0e0; border-radius: 15px; padding: 40px; text-align: center; transition: all 0.3s ease; cursor: pointer;"
+                     onclick="document.getElementById('file-input').click()"
+                     ondragover="this.style.borderColor='#12A0F4'; this.style.background='#f0f8ff';"
+                     ondragleave="this.style.borderColor='#e0e0e0'; this.style.background='transparent';">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+                    <p style="color: #666; margin-bottom: 10px;">Нажмите или перетащите файл сюда</p>
+                    <p style="font-size: 13px; color: #999;">Форматы: {{ assignment.allowed_extensions }} • До {{ assignment.max_file_size_mb }} МБ</p>
+                    <input type="file" name="file" id="file-input" required
+                           accept=".{{ assignment.allowed_extensions.replace(',', ',.') }}"
+                           style="display: none;"
+                           onchange="document.getElementById('selected-file').textContent = this.files[0]?.name || ''">
+                    <p id="selected-file" style="margin-top: 15px; font-weight: 600; color: #12A0F4;"></p>
+                </div>
+            </div>
+
+            <button type="submit"
+                    style="padding: 18px; background: linear-gradient(135deg, #12A0F4, #0A5D8E); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                {{ '📤 Отправить новую версию' if submission else '📤 Отправить работу' }}
+            </button>
+        </form>
+
+        {% if submission and submission.status == 'submitted' %}
+        <form method="post" action="{{ url_for('assignments.delete_submission', submission_id=submission.id) }}"
+              style="margin-top: 20px; text-align: center;"
+              onsubmit="return confirm('Удалить отправленную работу?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" style="background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 14px;">
+                🗑️ Удалить отправленную работу
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

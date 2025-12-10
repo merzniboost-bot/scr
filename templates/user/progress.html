@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Мой прогресс - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/twomain.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="circle circle-top"></div>
+    <div class="circle circle-bottom-right-1"></div>
+    <div class="circle circle-bottom-right-2"></div>
+    
+    <!-- Фильтры и сортировка -->
+    <div class="filters-section">
+        <div class="filter-buttons">
+            {% set current_filter = request.args.get('filter', 'all') %}
+            <a href="{{ url_for('user.progress') }}" 
+               class="filter-btn {{ 'active' if current_filter == 'all' or not request.args.get('filter') else '' }}">
+                Все курсы
+            </a>
+            <a href="{{ url_for('user.progress', filter='in_progress') }}" 
+               class="filter-btn {{ 'active' if current_filter == 'in_progress' else '' }}">
+                В процессе
+            </a>
+            <a href="{{ url_for('user.progress', filter='completed') }}" 
+               class="filter-btn {{ 'active' if current_filter == 'completed' else '' }}">
+                Завершенные
+            </a>
+        </div>
+        
+        <div class="sort-select">
+            <select onchange="window.location.href=this.value">
+                <option value="{{ url_for('user.progress') }}">Сортировка</option>
+                <option value="{{ url_for('user.progress', sort='progress') }}">По прогрессу</option>
+                <option value="{{ url_for('user.progress', sort='name') }}">По названию</option>
+                <option value="{{ url_for('user.progress', sort='date') }}">По дате</option>
+            </select>
+        </div>
+    </div>
+    
+    {% if courses_progress %}
+        <div class="courses-grid">
+            {% for item in courses_progress %}
+            <div class="course-card{% if loop.index % 4 == 2 %}s{% elif loop.index % 4 == 3 %}se{% elif loop.index % 4 == 0 %}ses{% endif %}">
+                <div class="course-header">
+                    {% set course = item.course if item.course is defined else none %}
+                    {% if course and course.preview_filename %}
+                        <img src="{{ url_for('lessons.serve_file', filename=course.preview_filename) }}" 
+                             alt="{{ item.title }}">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='img/Group 40.png') }}" 
+                             alt="{{ item.title }}">
+                    {% endif %}
+                    
+                    <div class="course-info">
+                        <h3>{{ item.title }}</h3>
+                        <p>{{ item.total_lessons }} урок{{ 'ов' if item.total_lessons != 1 else '' }}</p>
+                    </div>
+                </div>
+                
+                <!-- Прогресс-бар -->
+                <div class="progress-section">
+                    <div class="progress-bar-horizontal">
+                        <div class="progress-bar-fill" style="width: {{ item.progress_percent }}%;"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>{{ item.completed_lessons }} из {{ item.total_lessons }}</span>
+                        <span class="progress-percent">{{ item.progress_percent }}%</span>
+                    </div>
+                </div>
+                
+                <!-- Статус -->
+                {% if item.is_completed %}
+                    <div class="course-status completed">
+                        <span class="status-icon">✓</span>
+                        <span>Завершен</span>
+                    </div>
+                {% else %}
+                    <div class="course-status in-progress">
+                        <span class="status-icon">⏳</span>
+                        <span>В процессе</span>
+                    </div>
+                {% endif %}
+                
+                <a href="{{ url_for('courses.detail', course_id=item.course_id) }}" 
+                   class="course-button">
+                    {% if item.is_completed %}
+                        Повторить
+                    {% elif item.progress_percent > 0 %}
+                        Продолжить
+                    {% else %}
+                        Начать
+                    {% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Пагинация (если нужно) -->
+        {% if courses_progress|length > 8 %}
+        <div class="pagination">
+            <a href="{{ url_for('user.dashboard') }}" class="next-page-button">
+                ⭠ Вернуться к профилю
+            </a>
+        </div>
+        {% endif %}
+    {% else %}
+        <!-- Пустое состояние -->
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h2>У вас пока нет курсов в прогрессе</h2>
+            <p>Начните изучение курсов, чтобы отслеживать свой прогресс</p>
+            <a href="{{ url_for('courses.list') }}" class="btn-primary">
+                Перейти к курсам
+            </a>
+        </div>
+    {% endif %}
+    
+    <!-- Общая статистика -->
+    {% if courses_progress %}
+    <div class="overall-stats">
+        <h2>Общая статистика</h2>
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon">📖</div>
+                <div class="stat-value">{{ courses_progress|length }}</div>
+                <div class="stat-label">Всего курсов</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">
+                    {{ courses_progress|selectattr('is_completed')|list|length }}
+                </div>
+                <div class="stat-label">Завершено</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-value">
+                    {{ (courses_progress|rejectattr('is_completed')|list|length) }}
+                </div>
+                <div class="stat-label">В процессе</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">
+                    {% set total_lessons = courses_progress|sum(attribute='total_lessons') %}
+                    {% set completed = courses_progress|sum(attribute='completed_lessons') %}
+                    {{ (completed / total_lessons * 100)|int if total_lessons > 0 else 0 }}%
+                </div>
+                <div class="stat-label">Средний прогресс</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Анимация прогресс-баров при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar-fill');
+    
+    setTimeout(() => {
+        progressBars.forEach(bar => {
+            bar.style.transition = 'width 1s ease-out';
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

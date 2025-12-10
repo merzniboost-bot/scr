@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Детальная статистика - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('user.dashboard') }}" style="color: #12A0F4; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                ← Назад к профилю
+            </a>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="font-size: 36px; margin-bottom: 10px; color: #081844;">Детальная статистика</h1>
+            <p style="color: #666; font-size: 18px;">Подробная информация о вашем обучении</p>
+        </div>
+        
+        <!-- Общая статистика -->
+        {% if stats %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
+            <div style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); border-radius: 15px; padding: 25px; text-align: center; color: white;">
+                <div style="font-size: 42px; font-weight: bold; margin-bottom: 10px;">{{ stats.total_courses }}</div>
+                <div style="font-size: 16px; opacity: 0.9;">Курсов</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); border-radius: 15px; padding: 25px; text-align: center; color: white;">
+                <div style="font-size: 42px; font-weight: bold; margin-bottom: 10px;">{{ stats.completed_lessons }}</div>
+                <div style="font-size: 16px; opacity: 0.9;">Завершено уроков</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); border-radius: 15px; padding: 25px; text-align: center; color: white;">
+                <div style="font-size: 42px; font-weight: bold; margin-bottom: 10px;">{{ stats.overall_progress }}%</div>
+                <div style="font-size: 16px; opacity: 0.9;">Общий прогресс</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); border-radius: 15px; padding: 25px; text-align: center; color: white;">
+                <div style="font-size: 42px; font-weight: bold; margin-bottom: 10px;">{{ stats.tests_taken }}</div>
+                <div style="font-size: 16px; opacity: 0.9;">Пройдено тестов</div>
+            </div>
+            {% if stats.avg_score > 0 %}
+            <div style="background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%); border-radius: 15px; padding: 25px; text-align: center; color: white;">
+                <div style="font-size: 42px; font-weight: bold; margin-bottom: 10px;">{{ stats.avg_score }}%</div>
+                <div style="font-size: 16px; opacity: 0.9;">Средний балл</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Топ курсов по прогрессу -->
+        {% if top_courses %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: #081844; margin-bottom: 20px; font-size: 24px;">🏆 Топ курсов по прогрессу</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                {% for item in top_courses %}
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; border: 2px solid #e0e0e0; transition: all 0.2s ease;"
+                     onmouseover="this.style.borderColor='#12A0F4'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.1)';"
+                     onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #081844; font-size: 18px; flex: 1;">{{ item.course.title }}</h3>
+                        <span style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; white-space: nowrap;">
+                            {{ item.progress.percent }}%
+                        </span>
+                    </div>
+                    <div style="background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 10px;">
+                        <div style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); height: 100%; width: {{ item.progress.percent }}%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="color: #666; font-size: 14px;">
+                        {{ item.progress.completed }} из {{ item.progress.total }} уроков
+                    </div>
+                    <a href="{{ url_for('courses.detail', course_id=item.course.id) }}" 
+                       style="display: inline-block; margin-top: 15px; padding: 8px 20px; background: #12A0F4; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s ease;"
+                       onmouseover="this.style.background='#0d7bc4';"
+                       onmouseout="this.style.background='#12A0F4';">
+                        Открыть курс →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Завершенные курсы -->
+        {% if completed_courses %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: #081844; margin-bottom: 20px; font-size: 24px;">✅ Завершенные курсы</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                {% for item in completed_courses %}
+                <div style="background: #e8f5e9; border-radius: 15px; padding: 20px; border: 2px solid #4caf50;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #081844; font-size: 18px; flex: 1;">{{ item.course.title }}</h3>
+                        <span style="background: #4caf50; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                            ✓ 100%
+                        </span>
+                    </div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                        {{ item.progress.completed }} из {{ item.progress.total }} уроков завершено
+                    </div>
+                    <a href="{{ url_for('courses.detail', course_id=item.course.id) }}" 
+                       style="display: inline-block; padding: 8px 20px; background: #4caf50; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s ease;"
+                       onmouseover="this.style.background='#388e3c';"
+                       onmouseout="this.style.background='#4caf50';">
+                        Просмотреть курс →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Курсы в процессе -->
+        {% if in_progress_courses %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: #081844; margin-bottom: 20px; font-size: 24px;">📚 Курсы в процессе</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                {% for item in in_progress_courses %}
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; border: 2px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #081844; font-size: 18px; flex: 1;">{{ item.course.title }}</h3>
+                        <span style="background: #ff9800; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                            {{ item.progress.percent }}%
+                        </span>
+                    </div>
+                    <div style="background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 10px;">
+                        <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); height: 100%; width: {{ item.progress.percent }}%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                        {{ item.progress.completed }} из {{ item.progress.total }} уроков
+                    </div>
+                    <a href="{{ url_for('courses.detail', course_id=item.course.id) }}" 
+                       style="display: inline-block; padding: 8px 20px; background: #12A0F4; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s ease;"
+                       onmouseover="this.style.background='#0d7bc4';"
+                       onmouseout="this.style.background='#12A0F4';">
+                        Продолжить обучение →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Результаты тестов -->
+        {% if tests_data %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: #081844; margin-bottom: 20px; font-size: 24px;">📝 Результаты тестов</h2>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                            <th style="padding: 15px; text-align: left; color: #081844; font-weight: 600;">Тест</th>
+                            <th style="padding: 15px; text-align: left; color: #081844; font-weight: 600;">Курс</th>
+                            <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Баллы</th>
+                            <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Процент</th>
+                            <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Дата</th>
+                            <th style="padding: 15px; text-align: center; color: #081844; font-weight: 600;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in tests_data %}
+                        <tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.2s ease;"
+                            onmouseover="this.style.background='#f8f9fa';"
+                            onmouseout="this.style.background='white';">
+                            <td style="padding: 15px; color: #333; font-weight: 500;">{{ item.test.title }}</td>
+                            <td style="padding: 15px; color: #666; font-size: 14px;">{{ item.course.title }}</td>
+                            <td style="padding: 15px; text-align: center; color: #333;">{{ item.result.score }} / {{ item.result.total }}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <span style="padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;
+                                    {% if item.percent >= 90 %}background: #e8f5e9; color: #388e3c;
+                                    {% elif item.percent >= 75 %}background: #e3f2fd; color: #1976d2;
+                                    {% elif item.percent >= 60 %}background: #fff3e0; color: #f57c00;
+                                    {% else %}background: #ffebee; color: #c62828;{% endif %}">
+                                    {{ item.percent }}%
+                                </span>
+                            </td>
+                            <td style="padding: 15px; text-align: center; color: #666; font-size: 14px;">{{ item.result.created_at|datetime }}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <a href="{{ url_for('tests.result', result_id=item.result.id) }}" 
+                                   style="padding: 6px 12px; background: #12A0F4; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s ease;"
+                                   onmouseover="this.style.background='#0d7bc4';"
+                                   onmouseout="this.style.background='#12A0F4';">
+                                    Просмотреть
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Последняя активность -->
+        {% if recent_activity %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: #081844; margin-bottom: 20px; font-size: 24px;">🕐 Последняя активность</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for item in recent_activity %}
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; border-left: 4px solid #12A0F4; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div style="color: #081844; font-weight: 600; font-size: 16px; margin-bottom: 5px;">
+                            ✓ Завершен урок: {{ item.lesson.title }}
+                        </div>
+                        <div style="color: #666; font-size: 14px;">
+                            Курс: {{ item.course.title }}
+                        </div>
+                    </div>
+                    <div style="color: #666; font-size: 14px; white-space: nowrap;">
+                        {{ item.progress.completed_at|timeago }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Пустое состояние -->
+        {% if not stats and not top_courses and not completed_courses and not in_progress_courses and not tests_data and not recent_activity %}
+        <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 15px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
+            <h3 style="color: #081844; margin-bottom: 10px;">Статистика пока пуста</h3>
+            <p style="color: #666; margin-bottom: 30px;">Начните изучать курсы, чтобы увидеть здесь свою статистику</p>
+            <a href="{{ url_for('courses.list') }}" 
+               style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                Перейти к курсам
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    h2 {
+        font-size: 20px !important;
+    }
+    
+    table {
+        font-size: 14px;
+    }
+    
+    th, td {
+        padding: 10px !important;
+    }
+}
+</style>
+{% endblock %}
+
