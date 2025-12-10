@@ -9,6 +9,8 @@ import logging
 from werkzeug.utils import secure_filename
 from config import UPLOAD_DIR, Config
 from zoneinfo import ZoneInfo
+from PIL import Image, ImageOps
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +43,10 @@ def allowed_file(filename):
     return ext in Config.ALLOWED_FILE_EXTENSIONS
 
 
-def save_file(file, prefix='file'):
+def save_file(file, prefix='file', target_size=(400, 250)):
     """
-    Безопасное сохранение файла с уникальным именем
+    Сохраняет файл и для изображений делает идеальное вписывание в target_size
+    Без обрезки — добавляются белые поля сверху/снизу или по бокам
     """
     if not file or not file.filename:
         return None
@@ -53,15 +56,38 @@ def save_file(file, prefix='file'):
         return None
 
     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-    unique_filename = f"{prefix}_{uuid.uuid4().hex[:12]}.{ext}"
-    filepath = UPLOAD_DIR / unique_filename
+    unique_filename = f"{prefix}_{uuid.uuid4().hex[:12]}"
 
     try:
+        # Только для изображений делаем магию
+        if ext in {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff'}:
+            with Image.open(file.stream) as img:
+                # Конвертируем в RGB (чтобы WebP работал)
+                if img.mode in ("RGBA", "LA", "P"):
+                    background = Image.new("RGB", img.size, (255, 255, 255))
+                    background.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+                    img = background
+                elif img.mode != "RGB":
+                    img = img.convert("RGB")
+
+                # ВПИСЫВАЕМ картинку в нужный размер БЕЗ обрезки
+                img_thumbnail = ImageOps.fit(img, target_size, Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+
+                # Сохраняем как WebP — самый лёгкий и красивый формат
+                final_path = UPLOAD_DIR / f"{unique_filename}.webp"
+                img_thumbnail.save(final_path, 'WEBP', quality=85, method=6)
+
+                logger.info(f"Превью вписано {target_size} → {unique_filename}.webp")
+                return f"{unique_filename}.webp"
+
+        # Для видео и других файлов — просто сохраняем как есть
+        filepath = UPLOAD_DIR / f"{unique_filename}.{ext}"
         file.save(str(filepath))
-        logger.info(f"✅ Файл сохранен: {unique_filename}")
-        return unique_filename
+        logger.info(f"Файл сохранен без изменений: {unique_filename}.{ext}")
+        return f"{unique_filename}.{ext}"
+
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения файла: {e}")
+        logger.error(f"Ошибка обработки файла: {e}")
         return None
 
 

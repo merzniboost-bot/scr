@@ -22,61 +22,59 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     """Страница входа в систему"""
     if request.method == 'POST':
-        login_input = request.form.get('email', '').strip()  # Может быть email или username
+        login_input = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        logger.info(f"[LOGIN] Попытка входа: {login_input}")
+        logger.info(f"[LOGIN Попытка входа: {login_input}")
 
         if not login_input or not password:
             flash('Заполните все поля', 'error')
             return render_template('login.html', mode='login')
 
         try:
-            # Ищем пользователя по email или username
-            # Сначала пробуем как email (регистронезависимо)
+            # Ищем по email или username (регистронезависимо)
             user = User.query.filter(
-                (User.email.ilike(login_input)) | (User.username.ilike(login_input))
+                (User.email.ilike(login_input)) |
+                (User.username.ilike(login_input))
             ).first()
 
             if not user:
-                logger.warning(f"[LOGIN] Пользователь {login_input} не найден")
                 flash('Неверные данные для входа', 'error')
                 return render_template('login.html', mode='login')
 
             if not user.check_password(password):
-                logger.warning(f"[LOGIN] Неверный пароль для {login_input}")
                 flash('Неверные данные для входа', 'error')
                 return render_template('login.html', mode='login')
 
             if not user.approved:
-                logger.warning(f"[LOGIN] Пользователь {login_input} не подтвержден")
                 flash('Ваша учетная запись ожидает подтверждения администратора', 'warning')
                 return render_template('login.html', mode='login')
 
+            # УСПЕШНЫЙ ВХОД — здесь всё правильно
             session.permanent = True
             session['user_id'] = user.id
             session['username'] = user.username
             session['email'] = user.email
             session['role'] = user.role
 
-            logger.info(f"[LOGIN] ✅ Успешный вход: {user.email} (username={user.username}, role={user.role})")
+            logger.info(f"LOGIN Успешный вход: {user.email} (username={user.username}, role={user.role})")
             flash(f'Добро пожаловать, {user.fullname}!', 'success')
 
-            # Перенаправляем на сохраненный URL или на страницу по умолчанию
+            # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+            # ВАЖНО: после любого return ниже НЕ должно быть кода!
             next_url = session.pop('next_url', None)
             if next_url:
                 return redirect(next_url)
-            
-            if user.role == 'admin':
-                return redirect(url_for('admin.dashboard'))
-            else:
-                return redirect(url_for('courses.list'))
+
+            return redirect(url_for('admin.dashboard' if user.role == 'admin' else 'courses.list'))
+
+            # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
         except Exception as e:
-            logger.error(f"[LOGIN] ❌ Ошибка: {e}")
+            logger.error(f"LOGIN Ошибка: {e}")
             flash('Произошла ошибка. Попробуйте позже.', 'error')
-            return render_template('login.html', mode='login')
 
+    # Этот return срабатывает только при GET-запросе (открытие страницы)
     return render_template('login.html', mode='login')
 
 

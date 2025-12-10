@@ -8,10 +8,9 @@ from flask_wtf.csrf import generate_csrf
 from config import config, BASE_DIR
 from models import db, bcrypt, User
 from routes import register_blueprints
-from utils import init_demo_data
+# from utils import init_demo_data
 import logging
 import os
-
 # ============================================================================
 # ЛОГИРОВАНИЕ
 # ============================================================================
@@ -350,16 +349,16 @@ def init_db(app):
         except Exception:
             user_count = 0
 
-        if user_count == 0:
-            logger.info("База данных пуста → создаём демо-данные")
-            init_demo_data()
-        else:
-            logger.info(f"В базе уже есть данные ({user_count} пользователей)")
-            # Проверяем, есть ли хотя бы один админ
-            admin = User.query.filter_by(role='admin').first()
-            if not admin:
-                logger.warning("Администратор не найден → создаём демо-данные заново")
-                init_demo_data()
+#        if user_count == 0:
+#            logger.info("База данных пуста → создаём демо-данные")
+#            init_demo_data()
+#        else:
+#            logger.info(f"В базе уже есть данные ({user_count} пользователей)")
+#            # Проверяем, есть ли хотя бы один админ
+#            admin = User.query.filter_by(role='admin').first()
+#            if not admin:
+#                logger.warning("Администратор не найден → создаём демо-данные заново")
+#                init_demo_data()
 
         logger.info("Инициализация базы данных завершена")
 
@@ -368,25 +367,20 @@ def init_db(app):
 # ЗАПУСК ПРИЛОЖЕНИЯ
 # ============================================================================
 
+# Создаём приложение глобально — это нужно и для gunicorn, и для flask run
+app = create_app(os.environ.get('FLASK_ENV', 'production'))
+
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False   # пока без HTTPS
+
+# Инициализируем БД один раз при старте (только если запускаем напрямую)
 if __name__ == '__main__':
-    env = os.environ.get('FLASK_ENV', 'development')
-    debug_mode = env == 'development'
-
-    app = create_app(config_name=env)
-
-    # Инициализируем БД только при прямом запуске python app.py
-    init_db(app)
-
-    print("\n" + "=" * 80)
+    with app.app_context():
+        init_db(app)
+    print("\n" + "="*80)
     print("ПЛАТФОРМА ОБУЧЕНИЯ - ЗАПУСК")
-    print("=" * 80)
-    print(f"Режим: {env.upper()}")
-    print(f"Debug: {debug_mode}")
+    print("="*80)
+    print(f"Режим: {os.environ.get('FLASK_ENV', 'production').upper()}")
     print(f"URL: http://localhost:5000")
-    print(f"База: {app.config['SQLALCHEMY_DATABASE_URI'][:50]}...")
-    # print("\nДемо-аккаунты:")
-    # print("   Администратор: admin@example.com / Admin123!")
-    # print("   Преподаватель: teacher@example.com / Teacher123!")
-    # print("   Студент:       student@example.com / Student123!")
-    # print("\nВАЖНО: Измените пароли в production!")
-    print("=" * 80 + "\n")
+    print("="*80 + "\n")
+    app.run(host='0.0.0.0', port=5000, debug=False)
