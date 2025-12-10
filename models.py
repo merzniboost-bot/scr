@@ -30,6 +30,7 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False, default='student', index=True)
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=True)
     position = db.Column(db.String(100), nullable=True)
+    avatar_filename = db.Column(db.String(512))
     approved = db.Column(db.Boolean, nullable=False, default=False, index=True)
     created_at = db.Column(db.DateTime, default=now_msk)
 

@@ -5,7 +5,7 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session
 from models import db, User, Course, Lesson, UserProgress, Favorite, TestResult, Test
 from decorators import login_required
-from utils import get_course_progress, is_course_favorite, get_user_statistics
+from utils import get_course_progress, is_course_favorite, get_user_statistics, save_file, delete_file
 import logging
 
 logger = logging.getLogger(__name__)
@@ -585,15 +585,37 @@ def edit_profile():
         try:
             fullname = request.form.get('fullname', '').strip()
             position = request.form.get('position', '').strip()
+            delete_avatar_flag = request.form.get('delete_avatar') == 'true'
+            avatar_file = request.files.get('avatar')
 
             # Валидация
             if not fullname:
                 flash('Введите полное имя', 'error')
                 return render_template('user/edit_profile.html', user=user)
 
-            # Обновление данных
+            # Обновление основных данных
             user.fullname = fullname
             user.position = position if position else None
+
+            # Удаление аватара по запросу
+            if delete_avatar_flag and user.avatar_filename:
+                delete_file(user.avatar_filename)
+                user.avatar_filename = None
+
+            # Загрузка нового аватара
+            if avatar_file and avatar_file.filename:
+                filename = avatar_file.filename
+                ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                if ext in {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff'}:
+                    if user.avatar_filename:
+                        delete_file(user.avatar_filename)
+                    saved = save_file(avatar_file, prefix='avatar', target_size=(400, 400))
+                    if saved:
+                        user.avatar_filename = saved
+                    else:
+                        flash('Не удалось сохранить изображение профиля', 'warning')
+                else:
+                    flash('Неподдерживаемый формат изображения для фото профиля', 'warning')
 
             db.session.commit()
 
