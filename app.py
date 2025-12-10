@@ -3,6 +3,11 @@
 Главный файл приложения - объединенная платформа обучения
 Запуск: python app.py
 """
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 from flask import Flask, render_template, redirect, url_for, session, request, abort, flash
 from flask_wtf.csrf import generate_csrf
 from config import config, BASE_DIR
@@ -342,6 +347,21 @@ def init_db(app):
                     logger.info("Колонка max_attempts успешно добавлена")
                 except Exception as e:
                     logger.warning(f"Не удалось добавить колонку max_attempts (возможно, уже существует): {e}")
+
+        # Миграция: добавляем колонку avatar_filename в таблицу users
+        if 'users' in inspector.get_table_names():
+            user_columns = {col['name'] for col in inspector.get_columns('users')}
+            if 'avatar_filename' not in user_columns:
+                logger.info("Миграция: добавляем колонку avatar_filename в таблицу users")
+                try:
+                    with db.engine.connect() as conn:
+                        conn.execute(text(
+                            "ALTER TABLE users ADD COLUMN avatar_filename VARCHAR(512)"
+                        ))
+                        conn.commit()
+                    logger.info("Колонка avatar_filename успешно добавлена")
+                except Exception as e:
+                    logger.warning(f"Не удалось добавить колонку avatar_filename (возможно, уже существует): {e}")
 
         # 3. Определяем, пуста ли база (универсально для всех СУБД)
         try:

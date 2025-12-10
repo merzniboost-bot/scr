@@ -259,9 +259,7 @@ def edit(lesson_id):
 @lessons_bp.route('/<int:lesson_id>/delete', methods=['POST'])
 @login_required
 def delete(lesson_id):
-    """
-    Удаление урока
-    """
+    """Удаление урока"""
     try:
         lesson = db.session.get(Lesson, lesson_id)
 
@@ -301,7 +299,7 @@ def delete(lesson_id):
         db.session.rollback()
         logger.error(f"[LESSONS] ❌ Ошибка удаления урока: {e}")
         flash('Ошибка при удалении урока', 'error')
-        course_id = lesson.course_id if lesson else None
+        course_id = lesson.course_id if 'lesson' in locals() and lesson else None
 
     if course_id:
         return redirect(url_for('courses.detail', course_id=course_id))
@@ -312,9 +310,7 @@ def delete(lesson_id):
 @lessons_bp.route('/<int:lesson_id>/complete', methods=['POST'])
 @login_required
 def mark_complete(lesson_id):
-    """
-    Отметить урок как завершенный
-    """
+    """Отметить урок как завершенный и перейти к следующему уроку/курсу."""
     try:
         lesson = db.session.get(Lesson, lesson_id)
 
@@ -353,20 +349,29 @@ def mark_complete(lesson_id):
         db.session.commit()
         flash(f'Урок "{lesson.title}" отмечен как завершенный!', 'success')
 
+        # Автоматический переход к следующему уроку или к странице курса
+        next_lesson = db.session.query(Lesson).filter(
+            Lesson.course_id == lesson.course_id,
+            Lesson.order > lesson.order
+        ).order_by(Lesson.order).first()
+
+        if next_lesson:
+            return redirect(url_for('lessons.detail', lesson_id=next_lesson.id))
+        else:
+            return redirect(url_for('courses.detail', course_id=lesson.course_id))
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"[PROGRESS] ❌ Ошибка отметки урока: {e}")
         flash('Ошибка при обновлении прогресса', 'error')
 
-    return redirect(request.referrer or url_for('lessons.detail', lesson_id=lesson_id))
+        return redirect(request.referrer or url_for('lessons.detail', lesson_id=lesson_id))
 
 
 @lessons_bp.route('/<int:lesson_id>/uncomplete', methods=['POST'])
 @login_required
 def mark_uncomplete(lesson_id):
-    """
-    Снять отметку о завершении урока
-    """
+    """Снять отметку о завершении урока."""
     try:
         lesson = db.session.get(Lesson, lesson_id)
 

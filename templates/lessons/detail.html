@@ -33,26 +33,58 @@
 </div>
 
 <div class="main-content">
-    <div class="video-container">
-        {% if lesson.video_filename %}
-            <video
-                id="lesson-video"
-                width="940"
-                height="617"
-                controls
-                controlsList="nodownload"
-                oncontextmenu="return false;">
-                <source src="{{ url_for('lessons.serve_file', filename=lesson.video_filename) }}" type="video/mp4">
-                Ваш браузер не поддерживает видео.
-            </video>
-        {% else %}
-            <div class="no-video-placeholder">
-                <div style="text-align: center; padding: 100px 20px;">
-                    <h2>📹 Видео отсутствует</h2>
-                    <p>К этому уроку еще не добавлено видео</p>
-                </div>
+    <div class="lesson-main">
+        {% if lesson.content %}
+        <div class="description-block">
+            <h3>Содержание урока</h3>
+            <div class="text-card">
+                <p>{{ lesson.content|safe }}</p>
             </div>
+        </div>
         {% endif %}
+
+        {% if can_edit %}
+        <div class="description-block">
+            <h3>Управление уроком</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+                <a href="{{ url_for('lessons.edit', lesson_id=lesson.id) }}"
+                   style="padding: 10px 20px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600;">
+                    ✏️ Редактировать урок
+                </a>
+                <form method="post" action="{{ url_for('lessons.delete', lesson_id=lesson.id) }}"
+                      style="display: inline;"
+                      onsubmit="return confirm('Вы уверены, что хотите удалить этот урок?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn-danger"
+                            style="padding: 10px 20px; background: #ff5252; color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        🗑️ Удалить урок
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="video-container">
+            {% if lesson.video_filename %}
+                <video
+                    id="lesson-video"
+                    width="940"
+                    height="617"
+                    controls
+                    controlsList="nodownload"
+                    oncontextmenu="return false;">
+                    <source src="{{ url_for('lessons.serve_file', filename=lesson.video_filename) }}" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            {% else %}
+                <div class="no-video-placeholder">
+                    <div style="text-align: center; padding: 100px 20px;">
+                        <h2>📹 Видео отсутствует</h2>
+                        <p>К этому уроку еще не добавлено видео</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
         <!-- Задания урока -->
         {% set assignments = lesson.assignments.all() %}
@@ -146,38 +178,40 @@
         </div>
         {% endif %}
 
-        <!-- Кнопка завершения урока -->
-        <div class="lesson-controls">
-            {% if is_completed %}
-                <button class="btn-completed" disabled>
-                    ✓ Урок завершен
-                </button>
-                <form method="post" action="{{ url_for('lessons.mark_uncomplete', lesson_id=lesson.id) }}" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn-secondary">
-                        Снять отметку
-                    </button>
-                </form>
-            {% else %}
-                <form method="post" action="{{ url_for('lessons.mark_complete', lesson_id=lesson.id) }}" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn-complete">
-                        ✓ Отметить как завершенное
-                    </button>
-                </form>
-            {% endif %}
-        </div>
-
-        <!-- Навигация между уроками - теперь только кнопка "Назад" -->
-        <div class="lesson-navigation">
-            {% if prev_lesson %}
-                <a href="{{ url_for('lessons.detail', lesson_id=prev_lesson.id) }}" class="btn-nav">
-                    ← Предыдущий урок
+        {% if lesson.file_filename or lesson.video_filename %}
+        <div class="description-block">
+            <h3>Материалы урока</h3>
+            <div class="learning-list">
+                {% if lesson.file_filename %}
+                <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='file') }}"
+                   class="download-link" download>
+                    📎 Скачать прикрепленный файл
                 </a>
-            {% else %}
-                <div></div>
-            {% endif %}
+                {% endif %}
+                {% if lesson.video_filename %}
+                <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='video') }}"
+                   class="download-link" download>
+                    📹 Скачать видео урока
+                </a>
+                {% endif %}
+                <div class="meta-item">
+                    <span>{{ lesson.created_at|datetime }}</span>
+                </div>
+            </div>
         </div>
+        {% endif %}
+
+        {% if current_user and current_user.role == 'student' and not is_completed %}
+        <div class="description-block">
+            <form id="finish-lesson-form" method="post" action="{{ url_for('lessons.mark_complete', lesson_id=lesson.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit"
+                        style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50, #81C784); color: #ffffff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    Закончить урок
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 
     <div class="progress-sidebar">
@@ -251,76 +285,10 @@
                 {% endfor %}
             </div>
         {% endif %}
-    </div>
-</div>
 
-<div class="description-section">
-    <img src="{{ url_for('static', filename='img/icons8-часы-48 11.png') }}" alt="Время">
-
-    <div class="lesson-description active">
-        <h2>{{ lesson.title }}</h2>
-
-        <div class="lesson-meta">
-            <div class="meta-item">
-                <span>Урок {{ lesson.order }}</span>
-            </div>
-            {% if lesson.video_filename %}
-            <div class="meta-item">
-                <span>Видео-урок</span>
-            </div>
-            {% endif %}
-            <div class="meta-item">
-                <span>{{ lesson.created_at|datetime }}</span>
-            </div>
-        </div>
-
-        {% if lesson.content %}
-        <div class="description-block">
-            <h3>Содержание урока</h3>
-            <div class="text-card">
-                <p>{{ lesson.content|safe }}</p>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if lesson.file_filename or lesson.video_filename %}
-        <div class="description-block">
-            <h3>Материалы урока</h3>
-            <div class="learning-list">
-                {% if lesson.file_filename %}
-                <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='file') }}"
-                   class="download-link" download>
-                    📎 Скачать прикрепленный файл
-                </a>
-                {% endif %}
-                {% if lesson.video_filename %}
-                <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='video') }}"
-                   class="download-link" download>
-                    📹 Скачать видео урока
-                </a>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Редактирование для преподавателей -->
-        {% if can_edit %}
-        <div class="description-block">
-            <h3>Управление уроком</h3>
-            <div class="admin-controls">
-                <a href="{{ url_for('lessons.edit', lesson_id=lesson.id) }}" class="btn-edit">
-                    ✏️ Редактировать урок
-                </a>
-
-                <form method="post" action="{{ url_for('lessons.delete', lesson_id=lesson.id) }}"
-                      style="display: inline;"
-                      onsubmit="return confirm('Вы уверены, что хотите удалить этот урок?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn-danger">
-                        🗑️ Удалить урок
-                    </button>
-                </form>
-            </div>
+        {% if lesson.video_filename %}
+        <div class="meta-item">
+            <span>Видео-урок</span>
         </div>
         {% endif %}
     </div>
@@ -333,11 +301,12 @@
 <script>
 // Автоматическая отметка при досмотре видео
 const video = document.getElementById('lesson-video');
-if (video) {
+const finishForm = document.getElementById('finish-lesson-form');
+if (video && finishForm) {
     video.addEventListener('ended', function() {
         {% if not is_completed %}
         if (confirm('Вы досмотрели урок до конца. Отметить его как завершенный?')) {
-            document.querySelector('form[action*="complete"]').submit();
+            finishForm.submit();
         }
         {% endif %}
     });

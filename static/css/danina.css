@@ -707,6 +707,35 @@ body.light-theme .profile-icon {
     filter: none;
 }
 
+.profile-avatar-header {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-dark), var(--secondary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+body.light-theme .profile-avatar-header {
+    background: linear-gradient(135deg, var(--accent-light), var(--secondary-light));
+}
+
+.profile-avatar-header img,
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: contain;
+}
+
+.profile-avatar-initial {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 18px;
+}
+
 /* ВЫПАДАЮЩЕЕ МЕНЮ ПРОФИЛЯ */
 .profile-dropdown {
     position: absolute;

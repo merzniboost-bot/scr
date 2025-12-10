@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать урок - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=lesson.course_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 10px; color: #081844;">Редактировать урок</h1>
+        <p style="color: #666; margin-bottom: 30px;">Курс: {{ lesson.course.title }}</p>
+        
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название урока *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       required 
+                       minlength="3"
+                       value="{{ lesson.title }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="order" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Порядковый номер *</label>
+                <input type="number" 
+                       id="order" 
+                       name="order" 
+                       required 
+                       min="1"
+                       value="{{ lesson.order }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Определяет порядок урока в курсе</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="content" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Содержание урока</label>
+                <textarea id="content" 
+                          name="content" 
+                          rows="10"
+                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ lesson.content or '' }}</textarea>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="video" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Видео урока</label>
+                {% if lesson.video_filename %}
+                    <p style="font-size: 14px; color: #666; margin-bottom: 8px;">Текущее видео: {{ lesson.video_filename }}</p>
+                {% endif %}
+                <input type="file" 
+                       id="video" 
+                       name="video" 
+                       accept="video/*"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Форматы: MP4, AVI, MOV, WEBM. Максимальный размер: 500 МБ</small>
+                {% if lesson.video_filename %}
+                    <label style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: #666;">
+                        <input type="checkbox" name="delete_video" value="true">
+                        Удалить текущее видео
+                    </label>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="file" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Дополнительные материалы</label>
+                {% if lesson.file_filename %}
+                    <p style="font-size: 14px; color: #666; margin-bottom: 8px;">Текущий файл: {{ lesson.file_filename }}</p>
+                {% endif %}
+                <input type="file" 
+                       id="file" 
+                       name="file" 
+                       accept=".pdf,.doc,.docx,.txt,.zip,.rar,.ppt,.pptx"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">PDF, DOC, ZIP и другие файлы для скачивания</small>
+                {% if lesson.file_filename %}
+                    <label style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: #666;">
+                        <input type="checkbox" name="delete_file" value="true">
+                        Удалить текущий файл
+                    </label>
+                {% endif %}
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Сохранить изменения
+                </button>
+                <a href="{{ url_for('courses.detail', course_id=lesson.course_id) }}" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #12A0F4;
+}
+</style>
+{% endblock %}

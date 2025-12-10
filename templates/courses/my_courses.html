@@ -30,7 +30,7 @@
                 {% if item.course.preview_filename %}
                     <img src="{{ url_for('lessons.serve_file', filename=item.course.preview_filename) }}" 
                          alt="{{ item.course.title }}"
-                         style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+                         style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease;">
                 {% else %}
                     <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #12A0F4 0%, #0A5D8E 100%); display: flex; align-items: center; justify-content: center; font-size: 64px;">
                         📚
