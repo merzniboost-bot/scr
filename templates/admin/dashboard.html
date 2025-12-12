@@ -93,7 +93,23 @@
                             <td>
                                 <div class="user-info">
                                     <div class="user-avatar">
-                                        {{ u.fullname[:2]|upper }}
+                                        {% if u.id == user.id %}
+                                            {% if user.avatar_filename %}
+                                                <img style="border-radius: 50%;" src="{{ url_for('lessons.serve_file', filename=user.avatar_filename) }}">
+                                            {% else %}
+                                                <div class="avatar-placeholder">
+                                                    {{ user.fullname[:2]|upper }}
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if u.avatar_filename %}
+                                                <img src="{{ url_for('lessons.serve_file', filename=u.avatar_filename) }}">
+                                            {% else %}
+                                                <div class="avatar-placeholder">
+                                                    {{ u.fullname[:2]|upper }}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
                                     </div>
                                     <div class="user-details">
                                         <div class="user-name">{{ u.fullname }}</div>
