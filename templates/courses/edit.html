@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать курс - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 40px 20px;">
+    <div class="card" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=course.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 30px; color: #081844;">Редактировать курс</h1>
+        
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название курса *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       required 
+                       minlength="5"
+                       value="{{ course.title }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="description" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Описание курса</label>
+                <textarea id="description" 
+                          name="description" 
+                          rows="6"
+                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ course.description or '' }}</textarea>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Текущее превью</label>
+                {% if course.preview_filename %}
+                    <div style="margin-bottom: 15px;">
+                        <img src="{{ url_for('lessons.serve_file', filename=course.preview_filename) }}" 
+                             alt="Превью" 
+                             style="max-width: 300px; border-radius: 10px; border: 2px solid #e0e0e0;">
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 15px;">
+                        <input type="checkbox" name="delete_preview" value="true">
+                        <span>Удалить текущее превью</span>
+                    </label>
+                {% endif %}
+                
+                <label for="preview" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Новое превью (изображение)</label>
+                <input type="file" 
+                       id="preview" 
+                       name="preview" 
+                       accept="image/*"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Оставьте пустым, чтобы не изменять</small>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        class="btn" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Сохранить изменения
+                </button>
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" 
+                   class="btn" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+        
+        <!-- Управление уроками -->
+        <div style="margin-top: 50px; padding-top: 40px; border-top: 2px solid #e0e0e0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="font-size: 28px; color: #081844; margin: 0;">Уроки курса ({{ lessons|length }})</h2>
+                <a href="{{ url_for('lessons.add', course_id=course.id) }}" 
+                   style="padding: 12px 24px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                    + Добавить урок
+                </a>
+            </div>
+            
+            {% if lessons %}
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for lesson in lessons %}
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e0e0e0;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 8px;">
+                            <span style="background: #12A0F4; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                Урок {{ lesson.order }}
+                            </span>
+                            <h3 style="margin: 0; font-size: 18px; color: #333; font-weight: 600;">{{ lesson.title }}</h3>
+                        </div>
+                        <div style="display: flex; gap: 20px; font-size: 14px; color: #666;">
+                            {% if lesson.video_filename %}
+                                <span>📹 Видео</span>
+                            {% endif %}
+                            {% if lesson.file_filename %}
+                                <span>📄 Файл</span>
+                            {% endif %}
+                            {% if lesson.content %}
+                                <span>📝 Контент</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="{{ url_for('lessons.detail', lesson_id=lesson.id) }}" 
+                           style="padding: 8px 16px; background: #e8f3ff; color: #12A0F4; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">
+                            Просмотр
+                        </a>
+                        <a href="{{ url_for('lessons.edit', lesson_id=lesson.id) }}" 
+                           style="padding: 8px 16px; background: #fff3cd; color: #856404; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">
+                            Редактировать
+                        </a>
+                        <form method="post" action="{{ url_for('lessons.delete', lesson_id=lesson.id) }}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('Вы уверены, что хотите удалить урок «{{ lesson.title }}»? Это действие нельзя отменить.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    style="padding: 8px 16px; background: #f8d7da; color: #721c24; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                Удалить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; color: #666;">
+                <p style="font-size: 16px; margin: 0;">Уроков пока нет. Добавьте первый урок!</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Управление тестами -->
+        <div style="margin-top: 50px; padding-top: 40px; border-top: 2px solid #e0e0e0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="font-size: 28px; color: #081844; margin: 0;">Тесты курса ({{ tests|length }})</h2>
+                <a href="{{ url_for('tests.create', course_id=course.id) }}" 
+                   style="padding: 12px 24px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                    + Создать тест
+                </a>
+            </div>
+            
+            {% if tests %}
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for test in tests %}
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e0e0e0;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #333; font-weight: 600;">{{ test.title }}</h3>
+                        <div style="display: flex; gap: 20px; font-size: 14px; color: #666;">
+                            <span>❓ Вопросов: {{ test.questions|length }}</span>
+                            <span>📅 Создан: {{ test.created_at|date }}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="{{ url_for('tests.manage', test_id=test.id) }}" 
+                           style="padding: 8px 16px; background: #e8f3ff; color: #12A0F4; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">
+                            Управление
+                        </a>
+                        <a href="{{ url_for('tests.edit', test_id=test.id) }}" 
+                           style="padding: 8px 16px; background: #fff3cd; color: #856404; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">
+                            Редактировать
+                        </a>
+                        <form method="post" action="{{ url_for('tests.delete', test_id=test.id) }}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('Вы уверены, что хотите удалить тест «{{ test.title }}»? Это действие нельзя отменить.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    style="padding: 8px 16px; background: #f8d7da; color: #721c24; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                Удалить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; color: #666;">
+                <p style="font-size: 16px; margin: 0;">Тестов пока нет. Создайте первый тест!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #12A0F4;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(18, 160, 244, 0.3);
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Центр управления - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Сайдбар -->
+    <div class="sidebar">
+        <div class="text">
+            <div class="logo">
+                <h1>Центр управления</h1>
+                <p>Онлайн-школа колледжа</p>
+            </div>
+            
+            <div class="nav-section">
+                <h2>УПРАВЛЕНИЕ</h2>
+                <div class="nav-item active" data-content="users">
+                    <span>Пользователи</span>
+                    <span class="count" id="users-count">{{ stats.total_users }}</span>
+                </div>
+                <div class="nav-item" data-content="courses">
+                    <span>Курсы</span>
+                    <span class="count">{{ stats.total_courses }}</span>
+                </div>
+                <div class="nav-item" data-content="pending">
+                    <span>Ожидают подтверждения</span>
+                    <span class="count pending-badge">{{ stats.pending_users }}</span>
+                </div>
+                <div class="nav-item" data-content="groups">
+                    <span>Группы</span>
+                    <span class="count">{{ groups|length }}</span>
+                </div>
+            </div>
+            
+            <div class="nav-section">
+                <h2>СТАТИСТИКА</h2>
+                <div class="stat-item">
+                    <span>Уроков</span>
+                    <span class="count">{{ stats.total_lessons }}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Тестов</span>
+                    <span class="count">{{ stats.total_tests }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="main-content-wrapper">
+        <!-- Кнопка Назад -->
+        <div class="back-button-container">
+            <a href="{{ url_for('home') }}" class="back-button">← Назад</a>
+        </div>
+
+        <!-- Контент пользователей -->
+        <div class="content-section active" id="users-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Пользователи</h1>
+                        <p>Управление студентами и преподавателями</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все пользователи (<span id="users-table-count">{{ users|length }}</span>)</h2>
+                    <form action="{{ url_for('admin.dashboard') }}" method="get">
+                        <input name="search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('search', '') }}">
+                        <button type="submit">Поиск</button>
+                    </form>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>ГРУППА</th>
+                            <th>РОЛЬ</th>
+                            <th>СТАТУС</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        {% for u in users %}
+                        <tr class="user-row" data-user-id="{{ u.id }}">
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {% if u.id == user.id %}
+                                            {% if user.avatar_filename %}
+                                                <img style="border-radius: 50%;" src="{{ url_for('lessons.serve_file', filename=user.avatar_filename) }}">
+                                            {% else %}
+                                                <div class="avatar-placeholder">
+                                                    {{ user.fullname[:2]|upper }}
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if u.avatar_filename %}
+                                                <img src="{{ url_for('lessons.serve_file', filename=u.avatar_filename) }}">
+                                            {% else %}
+                                                <div class="avatar-placeholder">
+                                                    {{ u.fullname[:2]|upper }}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ u.fullname }}</div>
+                                        <div class="user-email">{{ u.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ u.group_rel.name if u.group_rel else '—' }}</td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                    <span class="role-badge admin">Администратор</span>
+                                {% elif u.role == 'teacher' %}
+                                    <span class="role-badge teacher">Преподаватель</span>
+                                {% else %}
+                                    <span class="role-badge student">Студент</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.approved %}
+                                    <span class="status active">Активен</span>
+                                {% else %}
+                                    <span class="status pending">Ожидает</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    {% if not u.approved %}
+                                        <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="action-btn approve-btn">Подтвердить</button>
+                                        </form>
+                                    {% endif %}
+                                    
+                                    <button class="action-btn edit-user" 
+                                            data-user-id="{{ u.id }}"
+                                            data-fullname="{{ u.fullname }}"
+                                            data-email="{{ u.email }}"
+                                            data-group="{{ u.group_id or '' }}"
+                                            data-role="{{ u.role }}"
+                                            data-approved="{{ 'true' if u.approved else 'false' }}">
+                                        Редактировать
+                                    </button>
+                                    
+                                    {% if u.id != current_user.id and u.role != 'admin' %}
+                                    <button class="action-btn delete-user" 
+                                            data-user-id="{{ u.id }}"
+                                            data-username="{{ u.fullname }}">
+                                        Удалить
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент ожидающих подтверждения -->
+        <div class="content-section" id="pending-content">
+            <div class="top">
+                <h1>Ожидают подтверждения</h1>
+                <p>Новые пользователи, требующие одобрения</p>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Ожидают подтверждения ({{ pending_users|length }})</h2>
+                </div>
+                
+                {% if pending_users %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>EMAIL</th>
+                            <th>РОЛЬ</th>
+                            <th>ДАТА РЕГИСТРАЦИИ</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in pending_users %}
+                        <tr class="user-row" data-user-id="{{ u.id }}">
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">{{ u.fullname[:2]|upper }}</div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ u.fullname }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                <span class="role-badge {{ u.role }}">
+                                    {{ 'Преподаватель' if u.role == 'teacher' else 'Студент' }}
+                                </span>
+                            </td>
+                            <td>{{ u.created_at|datetime }}</td>
+                            <td>
+                                <div class="actions">
+                                    <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="action-btn approve-btn">✓ Подтвердить</button>
+                                    </form>
+                                    
+                                    <button class="action-btn delete-user" 
+                                            data-user-id="{{ u.id }}"
+                                            data-username="{{ u.fullname }}">
+                                        ✗ Отклонить
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>Нет ожидающих подтверждения пользователей</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Контент курсов -->
+        <div class="content-section" id="courses-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Курсы</h1>
+                        <p>Управление образовательными курсами</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все курсы (<span id="courses-table-count">{{ recent_courses|length }}</span>)</h2>
+                    <form action="{{ url_for('admin.dashboard') }}" method="get">
+                        <input name="course_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('course_search', '') }}">
+                        <button type="submit">Поиск</button>
+                    </form>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>КУРС</th>
+                            <th>ПРЕПОДАВАТЕЛЬ</th>
+                            <th>УРОКОВ</th>
+                            <th>СОЗДАН</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in recent_courses %}
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {{ course.title[:2]|upper }}
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ course.title }}</div>
+                                        <div class="user-email">{{ course.description[:50] + '...' if course.description and course.description|length > 50 else course.description or 'Без описания' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ course.creator.fullname if course.creator else '—' }}</td>
+                            <td>{{ course.lessons|length }}</td>
+                            <td>{{ course.created_at.strftime('%d.%m.%Y') if course.created_at else '—' }}</td>
+                            <td>
+                                <div class="actions">
+                                    <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="action-btn">Открыть</a>
+                                    <a href="{{ url_for('courses.edit', course_id=course.id) }}" class="action-btn">Редактировать</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент групп -->
+        <div class="content-section" id="groups-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Группы</h1>
+                        <p>Управление учебными группами</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все группы (<span id="groups-table-count">{{ groups|length }}</span>)</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <form action="{{ url_for('admin.dashboard') }}" method="get" style="display: flex; gap: 10px; align-items: center;">
+                            <input name="group_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('group_search', '') }}">
+                            <button type="submit">Поиск</button>
+                        </form>
+                        <button class="action-btn create-btn" id="add-group-btn">
+                            + Создать группу
+                        </button>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>НАЗВАНИЕ</th>
+                            <th>ОПИСАНИЕ</th>
+                            <th>СТУДЕНТОВ</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in groups %}
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {{ group.name[:2]|upper }}
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ group.name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ group.description or '—' }}</td>
+                            <td>{{ group.students|length if group.students else 0 }}</td>
+                            <td>
+                                <div class="actions">
+                                    <a href="{{ url_for('admin.group_students', group_id=group.id) }}" class="action-btn">Студенты</a>
+                                    {% if group.students|length == 0 %}
+                                    <form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="action-btn" onclick="return confirm('Удалить группу?')">Удалить</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования пользователя -->
+<div class="modal-overlay" id="user-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Редактировать пользователя</h2>
+            <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <form id="user-form" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" id="user-id" name="user_id" value="">
+            
+            <div class="form-group">
+                <label class="form-label" for="user-fullname">ФИО</label>
+                <input type="text" id="user-fullname" name="fullname" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-email">Email</label>
+                <input type="email" id="user-email" name="email" class="form-input" disabled>
+                <small>Email нельзя изменить</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-group">Группа</label>
+                <select id="user-group" name="group_id" class="form-select">
+                    <option value="">Без группы</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-role">Роль</label>
+                <select id="user-role" name="role" class="form-select" required>
+                    <option value="student">Студент</option>
+                    <option value="teacher">Преподаватель</option>
+                    <option value="admin">Администратор</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="modal-cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="modal-save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для создания группы -->
+<div class="modal-overlay" id="group-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Создать группу</h2>
+            <button class="modal-close" id="group-modal-close">&times;</button>
+        </div>
+        <form method="post" action="{{ url_for('admin.add_group') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group">
+                <label class="form-label" for="group-name">Название группы</label>
+                <input type="text" id="group-name" name="name" class="form-input" required placeholder="Например: 2KC-24">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="group-description">Описание</label>
+                <input type="text" id="group-description" name="description" class="form-input" placeholder="Необязательно">
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="group-modal-cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary">Создать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для подтверждения удаления -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Подтверждение удаления</h2>
+            <button class="modal-close" id="delete-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="delete-message">Вы уверены, что хотите удалить этого пользователя?</p>
+        </div>
+        <form id="delete-form" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="delete-cancel">Отмена</button>
+                <button type="submit" class="btn btn-danger" id="delete-confirm">Удалить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Уведомление -->
+<div class="notification" id="notification"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-extra.js') }}"></script>
+<script>
+// Навигация по разделам
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const contentId = this.dataset.content;
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+        
+        this.classList.add('active');
+        document.getElementById(contentId + '-content').classList.add('active');
+    });
+});
+
+const userModal = document.getElementById('user-modal');
+const deleteModal = document.getElementById('delete-modal');
+const groupModal = document.getElementById('group-modal');
+
+// Открытие модального окна редактирования
+document.querySelectorAll('.edit-user').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const fullname = this.dataset.fullname;
+        const email = this.dataset.email;
+        const groupId = this.dataset.group;
+        const role = this.dataset.role;
+        
+        document.getElementById('user-id').value = userId;
+        document.getElementById('user-fullname').value = fullname;
+        document.getElementById('user-email').value = email;
+        document.getElementById('user-group').value = groupId;
+        document.getElementById('user-role').value = role;
+        
+        // ✅ ИСПРАВЛЕНО: правильный URL
+        document.getElementById('user-form').action = `/admin/users/${userId}/update`;
+        userModal.classList.add('active');
+    });
+});
+
+// Открытие модального окна удаления
+document.querySelectorAll('.delete-user').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const username = this.dataset.username;
+        
+        document.getElementById('delete-message').textContent = 
+            `Вы уверены, что хотите удалить пользователя "${username}"? Это действие нельзя отменить.`;
+        
+        document.getElementById('delete-form').action = `/admin/users/${userId}/delete`;
+        
+        deleteModal.classList.add('active');
+    });
+});
+
+// Создание группы
+document.getElementById('add-group-btn').addEventListener('click', () => {
+    groupModal.classList.add('active');
+});
+
+// Закрытие модальных окон
+document.querySelectorAll('.modal-close, #modal-cancel, #delete-cancel, #group-modal-cancel').forEach(btn => {
+    btn.addEventListener('click', function() {
+        userModal.classList.remove('active');
+        deleteModal.classList.remove('active');
+        groupModal.classList.remove('active');
+    });
+});
+
+// Закрытие по клику вне окна
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
+    }
+});
+</script>
+{% endblock %}

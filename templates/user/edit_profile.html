@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать профиль - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 700px; margin: 60px auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('user.profile') }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к профилю</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 30px; color: #081844;">Редактировать профиль</h1>
+        
+        <form method="post" enctype="multipart/form-data" class="profile-edit-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="avatar_cropped" id="avatarCropped">
+            
+            <div class="avatar-section">
+                <div class="avatar-preview" id="avatarPreview">
+                    {% if user.avatar_filename %}
+                        <img id="avatarImg" src="{{ url_for('lessons.serve_file', filename=user.avatar_filename) }}" alt="Фото профиля">
+                    {% else %}
+                        <span class="avatar-placeholder">Загрузите фото</span>
+                    {% endif %}
+                </div>
+                <div class="avatar-actions">
+                    <label for="avatar" class="avatar-upload-btn">Загрузить фото</label>
+                    <input type="file" id="avatar" name="avatar" accept="image/*" style="display: none;">
+                    <div class="avatar-zoom">
+                        <span>Масштаб</span>
+                        <input type="range" id="avatarZoom" min="0.8" max="1.6" step="0.02" value="1">
+                        <button type="button" id="avatarReset" class="avatar-reset">Сброс</button>
+                    </div>
+                    {% if user.avatar_filename %}
+                        <label class="avatar-delete">
+                            <input type="checkbox" name="delete_avatar" value="true">
+                            Удалить текущее фото
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="fullname" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">ФИО *</label>
+                <input type="text" 
+                       id="fullname" 
+                       name="fullname" 
+                       required
+                       value="{{ user.fullname }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="position" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Должность / Специализация</label>
+                <input type="text" 
+                       id="position" 
+                       name="position" 
+                       value="{{ user.position or '' }}"
+                       placeholder="Например: Преподаватель программирования"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Сохранить изменения
+                </button>
+                <a href="{{ url_for('user.profile') }}" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-group input:focus {
+    outline: none;
+    border-color: #12A0F4;
+}
+
+.avatar-section {
+    text-align: center;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.avatar-preview {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    cursor: grab;
+}
+
+.avatar-preview img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center center;
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.12s ease;
+}
+
+.avatar-preview.dragging {
+    cursor: grabbing;
+}
+
+.avatar-placeholder {
+    font-size: 16px;
+    font-weight: 600;
+    color: #777;
+    padding: 0 12px;
+    text-align: center;
+}
+
+.avatar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.avatar-upload-btn {
+    padding: 9px 18px;
+    background: #f0f0f0;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.avatar-upload-btn:hover {
+    background: #e8f4ff;
+    border-color: #12A0F4;
+}
+
+.avatar-zoom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
+.avatar-zoom input[type="range"] {
+    width: 160px;
+}
+
+.avatar-reset,
+.zoom-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    color: #444;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.avatar-reset:hover,
+.zoom-btn:hover {
+    background: #eef7ff;
+    border-color: #12A0F4;
+}
+
+.avatar-delete {
+    font-size: 13px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('avatar');
+    const preview = document.getElementById('avatarPreview');
+    let img = document.getElementById('avatarImg');
+    const zoomInput = document.getElementById('avatarZoom');
+    const resetBtn = document.getElementById('avatarReset');
+    const form = document.querySelector('.profile-edit-form');
+    const croppedInput = document.getElementById('avatarCropped');
+
+    const PREVIEW_SIZE = 180;
+    const CANVAS_SIZE = 400;
+    const RATIO = CANVAS_SIZE / PREVIEW_SIZE;
+    let offsetX = 0;
+    let offsetY = 0;
+    let baseScale = 1;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startOffsetX = 0;
+    let startOffsetY = 0;
+
+    const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+    const applyZoom = () => {
+        if (img) {
+            const z = parseFloat(zoomInput.value || '1');
+            const total = baseScale * z;
+            img.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${total})`;
+        }
+    };
+
+    const setBaseScale = () => {
+        if (!img || !img.naturalWidth || !img.naturalHeight) return;
+        baseScale = Math.min(PREVIEW_SIZE / img.naturalWidth, PREVIEW_SIZE / img.naturalHeight);
+        applyZoom();
+    };
+
+    const ensureImage = () => {
+        if (!img) {
+            img = document.createElement('img');
+            img.id = 'avatarImg';
+            preview.innerHTML = '';
+            preview.appendChild(img);
+        }
+    };
+
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            ensureImage();
+            img.src = ev.target?.result;
+            zoomInput.value = 1;
+            offsetX = 0;
+            offsetY = 0;
+            img.onload = () => {
+                setBaseScale();
+            };
+            applyZoom();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    zoomInput?.addEventListener('input', applyZoom);
+
+    resetBtn?.addEventListener('click', () => {
+        zoomInput.value = 1;
+        offsetX = 0;
+        offsetY = 0;
+        applyZoom();
+    });
+
+    // Dragging to reposition
+    preview?.addEventListener('mousedown', (e) => {
+        if (!img) return;
+        dragging = true;
+        preview.classList.add('dragging');
+        startX = e.clientX;
+        startY = e.clientY;
+        startOffsetX = offsetX;
+        startOffsetY = offsetY;
+    });
+
+    window.addEventListener('mouseup', () => {
+        dragging = false;
+        preview.classList.remove('dragging');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging || !img) return;
+        const z = parseFloat(zoomInput.value || '1');
+        const total = baseScale * z;
+        const maxShiftX = Math.max(0, (img.naturalWidth * total - PREVIEW_SIZE) / 2);
+        const maxShiftY = Math.max(0, (img.naturalHeight * total - PREVIEW_SIZE) / 2);
+        offsetX = clamp(startOffsetX + (e.clientX - startX), -maxShiftX, maxShiftX);
+        offsetY = clamp(startOffsetY + (e.clientY - startY), -maxShiftY, maxShiftY);
+        applyZoom();
+    });
+
+    // Подготовка dataURL перед отправкой
+    form?.addEventListener('submit', (e) => {
+        if (!img || !img.complete) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = CANVAS_SIZE;
+        canvas.height = CANVAS_SIZE;
+        const ctx = canvas.getContext('2d');
+        const z = parseFloat(zoomInput.value || '1');
+        const total = baseScale * z;
+        const drawW = img.naturalWidth * total * RATIO;
+        const drawH = img.naturalHeight * total * RATIO;
+        const centerX = CANVAS_SIZE / 2 + offsetX * RATIO;
+        const centerY = CANVAS_SIZE / 2 + offsetY * RATIO;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.drawImage(img, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
+
+        if (croppedInput) {
+            croppedInput.value = canvas.toDataURL('image/png');
+        }
+    });
+
+    if (img && img.complete) {
+        setBaseScale();
+    }
+});
+</script>
+{% endblock %}
+

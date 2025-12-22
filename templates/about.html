@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}О платформе - СКР Digital{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
+
+{% block content %}
+<div class="page-content">
+    <div class="page-card">
+        <h1>О платформе</h1>
+        
+        <p style="text-align: center; margin-bottom: 40px;">
+            СКР Digital - современная платформа онлайн-обучения Симферопольского колледжа радиоэлектроники.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-bottom: 50px;">
+            <div class="feature-card">
+                <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
+                <h3>Интерактивные курсы</h3>
+                <p>Увлекательные курсы с практическими заданиями</p>
+            </div>
+            
+            <div class="feature-card">
+                <div style="font-size: 48px; margin-bottom: 15px;">📹</div>
+                <h3>Видео-уроки</h3>
+                <p>Качественные видео-материалы для обучения</p>
+            </div>
+            
+            <div class="feature-card">
+                <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
+                <h3>Тестирование</h3>
+                <p>Проверка знаний с помощью интерактивных тестов</p>
+            </div>
+            
+            <div class="feature-card">
+                <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                <h3>Отслеживание прогресса</h3>
+                <p>Детальная статистика вашего обучения</p>
+            </div>
+            
+            <div class="feature-card">
+                <div style="font-size: 48px; margin-bottom: 15px;">⭐</div>
+                <h3>Избранное</h3>
+                <p>Сохраняйте понравившиеся курсы</p>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2 style="margin-bottom: 20px;">Наша миссия</h2>
+            <p style="margin-bottom: 20px;">
+                Мы стремимся сделать качественное образование доступным для всех. Наша платформа объединяет 
+                студентов и преподавателей, создавая интерактивную среду для эффективного обучения.
+            </p>
+            <p>
+                Присоединяйтесь к нам и начните свой путь к новым знаниям!
+            </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="{{ url_for('home') }}" class="btn" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; margin-right: 15px;">
+                На главную
+            </a>
+            <a href="{{ url_for('contact') }}" class="btn contact-btn">
+                Связаться с нами
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

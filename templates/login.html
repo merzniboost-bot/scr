@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if mode == 'register' %}Регистрация{% else %}Вход{% endif %} - СКР Digital
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page {{ 'mode-register' if mode == 'register' else 'mode-login' }}">
+    <div class="container">
+        <div class="form-container">
+        <div class="form-header">
+            <div class="auth-buttons">
+                <a href="{{ url_for('auth.login') }}"
+                   class="auth-button {% if not mode or mode == 'login' %}active{% endif %}">
+                    Вход
+                </a>
+                <a href="{{ url_for('auth.register') }}"
+                   class="auth-button {% if mode == 'register' %}active{% endif %}">
+                    Регистрация
+                </a>
+            </div>
+        </div>
+
+        <!-- Форма входа -->
+        <form class="form {% if mode == 'register' %}hidden{% endif %}"
+              id="loginForm"
+              method="post"
+              action="{{ url_for('auth.login') }}">
+
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="form-group">
+                <label>Email или имя пользователя</label>
+                <input type="text"
+                       name="email"
+                       placeholder="Email или имя пользователя"
+                       required
+                       value="{{ request.form.get('email', '') if mode == 'login' else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password"
+                       name="password"
+                       placeholder="Введите пароль"
+                       required>
+            </div>
+
+            <button type="submit" class="submit-button">Войти</button>
+
+            <p class="form-footer">
+                Нет аккаунта? <a href="{{ url_for('auth.register') }}">Зарегистрируйтесь</a>
+            </p>
+        </form>
+
+        <!-- Форма регистрации -->
+        <form class="form {% if not mode or mode == 'login' %}hidden{% endif %}"
+              id="registrationForm"
+              method="post"
+              action="{{ url_for('auth.register') }}">
+
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="form-group">
+                <label for="fullname">ФИО</label>
+                <input type="text"
+                       id="fullname"
+                       name="fullname"
+                       placeholder="Фамилия Имя Отчество"
+                       required
+                       value="{{ request.form.get('fullname', '') if mode == 'register' else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="username">Имя пользователя</label>
+                <input type="text"
+                       id="username"
+                       name="username"
+                       placeholder="Логин (минимум 3 символа)"
+                       required
+                       minlength="3"
+                       value="{{ request.form.get('username', '') if mode == 'register' else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       placeholder="Ваш email"
+                       required
+                       value="{{ request.form.get('email', '') if mode == 'register' else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password"
+                       id="password"
+                       name="password"
+                       placeholder="Пароль (минимум 8 символов)"
+                       required
+                       minlength="8">
+            </div>
+
+            <div class="form-group">
+                <label for="password_confirm">Подтвердите пароль</label>
+                <input type="password"
+                       id="password_confirm"
+                       name="password_confirm"
+                       placeholder="Повторите пароль"
+                       required>
+            </div>
+
+            <!-- Выбор роли -->
+            <div class="form-group">
+                <label>Роль</label>
+                <div class="role-selection">
+                    <button type="button" id="studentBtn" class="role-btn active" onclick="selectRole('student')">Студент</button>
+                    <button type="button" id="teacherBtn" class="role-btn" onclick="selectRole('teacher')">Преподаватель</button>
+                    <input type="hidden" id="roleInput" name="role" value="student">
+                </div>
+            </div>
+
+            <!-- Группа (для студентов) -->
+            <div id="groupField" class="form-group">
+                <label>Группа</label>
+                <div class="dropdown-container">
+                    <button type="button" class="dropdown-button" onclick="toggleDropdown('group')">Выберите группу ▼</button>
+                    <input type="hidden" id="groupInput" name="group">
+                    <div id="groupDropdown" class="dropdown-menu">
+                        {% for group in groups %}
+                            <div class="dropdown-item" onclick="selectGroup('{{ group.name }}')">{{ group.name }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Должность (для преподавателей) -->
+            <div id="positionField" class="form-group hidden">
+                <label>Должность</label>
+                <div class="dropdown-container">
+                    <button type="button" class="dropdown-button" onclick="toggleDropdown('position')">Выберите должность ▼</button>
+                    <input type="hidden" id="positionInput" name="position">
+                    <div id="positionDropdown" class="dropdown-menu">
+                        <div class="dropdown-item" onclick="selectPosition('Преподаватель')">Преподаватель</div>
+                        <div class="dropdown-item" onclick="selectPosition('Старший преподаватель')">Старший преподаватель</div>
+                        <div class="dropdown-item" onclick="selectPosition('Заведующий кафедрой')">Заведующий кафедрой</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-button">Зарегистрироваться</button>
+
+            <p class="form-footer">
+                Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войдите</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script>
+    function selectRole(role) {
+        const groupField = document.getElementById('groupField');
+        const positionField = document.getElementById('positionField');
+        const studentBtn = document.getElementById('studentBtn');
+        const teacherBtn = document.getElementById('teacherBtn');
+        const roleInput = document.getElementById('roleInput');
+
+        if (role === 'student') {
+            groupField.classList.remove('hidden');
+            positionField.classList.add('hidden');
+            studentBtn.classList.add('active');
+            teacherBtn.classList.remove('active');
+            roleInput.value = 'student';
+        } else {
+            groupField.classList.add('hidden');
+            positionField.classList.remove('hidden');
+            studentBtn.classList.remove('active');
+            teacherBtn.classList.add('active');
+            roleInput.value = 'teacher';
+        }
+    }
+
+    function toggleDropdown(type) {
+        const dropdown = document.getElementById(type + 'Dropdown');
+        dropdown.classList.toggle('show');
+    }
+
+    function selectGroup(group) {
+        document.querySelector('#groupField .dropdown-button').textContent = group + ' ▼';
+        document.getElementById('groupInput').value = group;
+        document.getElementById('groupDropdown').classList.remove('show');
+    }
+
+    function selectPosition(position) {
+        document.querySelector('#positionField .dropdown-button').textContent = position + ' ▼';
+        document.getElementById('positionInput').value = position;
+        document.getElementById('positionDropdown').classList.remove('show');
+    }
+
+    // Закрытие дропдаунов при клике вне
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-container')) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
+
+    // Клиентская валидация паролей
+    const registrationForm = document.getElementById('registrationForm');
+    if (registrationForm) {
+        registrationForm.addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('password_confirm').value;
+
+            if (password !== passwordConfirm) {
+                e.preventDefault();
+                alert('Пароли не совпадают!');
+            } else if (password.length < 8) {
+                e.preventDefault();
+                alert('Пароль должен содержать минимум 8 символов!');
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.flash-close').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const flash = this.closest('.flash');
+                if (flash) {
+                    flash.style.opacity = '0';
+                    flash.style.transform = 'translateY(-10px)';
+                    setTimeout(() => flash.remove(), 300);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

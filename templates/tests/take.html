@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Прохождение теста: {{ test.title }} - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=test.course_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                ← Назад к курсу
+            </a>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">{{ test.title }}</h1>
+            <p style="color: #666; font-size: 16px;">Курс: {{ test.course.title }}</p>
+            <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <div style="padding: 15px; background: #e3f2fd; border-radius: 10px; display: inline-block;">
+                    <span style="color: #1976d2; font-weight: 600;">Вопросов: {{ questions|length }}</span>
+                </div>
+                {% if remaining_attempts is not none %}
+                    {% if remaining_attempts == 1 %}
+                    <div class="attempts-warning" style="padding: 15px; background: #fff3cd; border-radius: 10px; display: inline-block;">
+                        <span style="color: #856404; font-weight: 600;">⚠️ Последняя попытка</span>
+                    </div>
+                    {% else %}
+                    <div class="attempts-info" style="padding: 15px; background: #d4edda; border-radius: 10px; display: inline-block;">
+                        <span style="color: #155724; font-weight: 600;">Осталось попыток: {{ remaining_attempts }}</span>
+                    </div>
+                    {% endif %}
+                {% else %}
+                <div style="padding: 15px; background: #d4edda; border-radius: 10px; display: inline-block;">
+                    <span style="color: #155724; font-weight: 600;">Попытки: неограниченно</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="post" id="test-form" onsubmit="return confirmSubmit();">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div style="margin-bottom: 40px;">
+                {% for question in questions %}
+                <div class="question-card" style="background: #f8f9fa; border-radius: 15px; padding: 30px; margin-bottom: 25px; border: 2px solid #e0e0e0; transition: all 0.3s ease;">
+                    <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 20px;">
+                        <div style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                            {{ loop.index }}
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0; color: #081844; font-size: 18px; line-height: 1.5;">{{ question.text }}</h3>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        {% set options = [question.option1, question.option2, question.option3, question.option4] %}
+                        {% for option in options %}
+                        <label style="display: flex; align-items: center; gap: 12px; padding: 15px; background: white; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; border: 2px solid #e0e0e0;" 
+                               onmouseover="this.style.borderColor='#12A0F4'; this.style.background='#f0f8ff';" 
+                               onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='white';">
+                            <input type="radio" 
+                                   name="question_{{ question.id }}" 
+                                   value="{{ loop.index }}" 
+                                   required
+                                   style="width: 20px; height: 20px; cursor: pointer; accent-color: #12A0F4;">
+                            <span style="flex: 1; color: #333; font-size: 16px;">{{ option }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                <a href="{{ url_for('courses.detail', course_id=test.course_id) }}" 
+                   style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease;"
+                   onmouseover="this.style.background='#e0e0e0';"
+                   onmouseout="this.style.background='#f5f5f5';">
+                    Отмена
+                </a>
+                <button type="submit" 
+                        style="padding: 12px 40px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                    ✓ Завершить тест
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function confirmSubmit() {
+    const unanswered = document.querySelectorAll('input[type="radio"]:checked').length;
+    const total = {{ questions|length }};
+    
+    if (unanswered < total) {
+        return confirm('Вы ответили не на все вопросы. Вы уверены, что хотите завершить тест?');
+    }
+    return confirm('Вы уверены, что хотите завершить тест? После отправки вы не сможете изменить ответы.');
+}
+
+// Подсветка выбранных ответов
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const label = this.closest('label');
+        const card = label.closest('.question-card');
+        
+        // Убираем подсветку с других вариантов в этом вопросе
+        card.querySelectorAll('label').forEach(l => {
+            l.style.borderColor = '#e0e0e0';
+            l.style.background = 'white';
+        });
+        
+        // Подсвечиваем выбранный вариант
+        label.style.borderColor = '#12A0F4';
+        label.style.background = '#e3f2fd';
+    });
+});
+</script>
+
+<style>
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .question-card {
+        padding: 20px !important;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+}
+</style>
+{% endblock %}
+

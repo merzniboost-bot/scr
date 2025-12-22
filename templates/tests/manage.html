@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Управление тестом: {{ test.title }} - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=test.course_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">{{ test.title }}</h1>
+                <p style="color: #666;">Управление вопросами теста</p>
+            </div>
+            <a href="{{ url_for('tests.add_question', test_id=test.id) }}" 
+               style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                + Добавить вопрос
+            </a>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
+            <div style="background: #e3f2fd; border-radius: 15px; padding: 20px; text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #1976d2; margin-bottom: 5px;">{{ stats.total_questions }}</div>
+                <div style="color: #666; font-size: 14px;">Вопросов</div>
+            </div>
+            <div style="background: #f3e5f5; border-radius: 15px; padding: 20px; text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #7b1fa2; margin-bottom: 5px;">{{ stats.total_attempts }}</div>
+                <div style="color: #666; font-size: 14px;">Попыток</div>
+            </div>
+            <div style="background: #e8f5e9; border-radius: 15px; padding: 20px; text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #388e3c; margin-bottom: 5px;">{{ stats.avg_score }}%</div>
+                <div style="color: #666; font-size: 14px;">Средний балл</div>
+            </div>
+        </div>
+        
+        {% if questions %}
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #081844; margin-bottom: 20px;">Вопросы теста</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for question in questions %}
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; border: 2px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 300px;">
+                            <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 15px;">
+                                <div style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                                    {{ loop.index }}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="color: #081844; font-weight: 600; font-size: 16px; margin-bottom: 10px;">{{ question.text }}</div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        {% set options = [question.option1, question.option2, question.option3, question.option4] %}
+                                        {% for option in options %}
+                                        <div style="padding: 8px 12px; background: white; border-radius: 8px; font-size: 14px; {% if loop.index == question.correct_answer %}border-left: 4px solid #4caf50; background: #e8f5e9;{% endif %}">
+                                            {% if loop.index == question.correct_answer %}<strong style="color: #4caf50;">✓</strong> {% endif %}{{ option }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-shrink: 0;">
+                            <a href="{{ url_for('tests.edit_question', question_id=question.id) }}" 
+                               style="padding: 8px 16px; background: #12A0F4; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s ease;"
+                               onmouseover="this.style.background='#0d7bc4';"
+                               onmouseout="this.style.background='#12A0F4';">
+                                ✏️ Редактировать
+                            </a>
+                            <form method="post" action="{{ url_for('tests.delete_question', question_id=question.id) }}" style="display: inline;"
+                                  onsubmit="return confirm('Вы уверены, что хотите удалить этот вопрос?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" 
+                                        style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='#d32f2f';"
+                                        onmouseout="this.style.background='#f44336';">
+                                    🗑️ Удалить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+            <a href="{{ url_for('tests.all_results', test_id=test.id) }}" 
+               style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease;"
+               onmouseover="this.style.background='#e0e0e0';"
+               onmouseout="this.style.background='#f5f5f5';">
+                📊 Просмотреть все результаты
+            </a>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 15px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">📝</div>
+            <h3 style="color: #081844; margin-bottom: 10px;">В тесте пока нет вопросов</h3>
+            <p style="color: #666; margin-bottom: 30px;">Добавьте первый вопрос, чтобы студенты могли пройти тест</p>
+            <a href="{{ url_for('tests.add_question', test_id=test.id) }}" 
+               style="padding: 12px 30px; background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(18, 160, 244, 0.4)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(18, 160, 244, 0.3)';">
+                + Добавить первый вопрос
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

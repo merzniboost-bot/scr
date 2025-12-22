@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Студенты курса - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 60px auto; padding: 40px 20px;">
+    <div style="margin-bottom: 30px;">
+        <a href="{{ url_for('courses.detail', course_id=course.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+    </div>
+    
+    <h1 style="font-size: 42px; margin-bottom: 10px; color: #081844;">Студенты курса</h1>
+    <p style="color: #666; font-size: 18px; margin-bottom: 40px;">{{ course.title }}</p>
+    
+    {% if students %}
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+            <div style="display: grid; gap: 20px;">
+                {% for student_data in students %}
+                <div style="padding: 25px; background: #f8f9fa; border-radius: 15px; border-left: 4px solid #12A0F4;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <h3 style="margin-bottom: 5px; color: #081844;">{{ student_data.user.fullname }}</h3>
+                            <p style="color: #666; font-size: 14px;">{{ student_data.user.email }}</p>
+                            {% if student_data.user.group_rel %}
+                                <p style="color: #999; font-size: 13px; margin-top: 5px;">Группа: {{ student_data.user.group_rel.name }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="flex: 1; min-width: 250px;">
+                            <div style="margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="font-size: 14px; color: #666;">Прогресс</span>
+                                    <span style="font-weight: 600; color: #12A0F4;">{{ student_data.percent }}%</span>
+                                </div>
+                                <div style="height: 8px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+                                    <div style="height: 100%; background: linear-gradient(90deg, #12A0F4, #0A5D8E); width: {{ student_data.percent }}%; transition: width 0.5s;"></div>
+                                </div>
+                            </div>
+                            <p style="font-size: 13px; color: #666;">
+                                {{ student_data.completed }} из {{ student_data.total }} уроков завершено
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            {% if student_data.percent == 100 %}
+                                <span style="display: inline-block; padding: 8px 16px; background: #4CAF50; color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                    ✓ Завершен
+                                </span>
+                            {% elif student_data.percent > 0 %}
+                                <span style="display: inline-block; padding: 8px 16px; background: #FF9800; color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                    В процессе
+                                </span>
+                            {% else %}
+                                <span style="display: inline-block; padding: 8px 16px; background: #9E9E9E; color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                    Не начат
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 80px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 20px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+            <h2 style="margin-bottom: 15px; color: #081844;">Пока нет студентов</h2>
+            <p style="color: #666;">На этом курсе еще никто не начал обучение</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
