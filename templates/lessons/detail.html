@@ -3,7 +3,7 @@
 {% block title %}{{ lesson.title }} - {{ lesson.course.title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/fivemain.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lesson.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,8 +18,12 @@
     </div>
 
     <div class="lesson-counter">
-        {% set real_total = lesson.course.lessons | rejectattr("order", "none") | selectattr("order", "gt", 0) | list | length %}
-        {{ lesson.order }} урок из {{ real_total }}
+        {% if current_position and total_materials %}
+            {{ current_position }} из {{ total_materials }}
+        {% else %}
+            Урок {{ lesson.order }}
+        {% endif %}
+        
         {% if next_lesson %}
             <a href="{{ url_for('lessons.detail', lesson_id=next_lesson.id) }}" class="btn-next">
                 Следующий урок →
@@ -38,7 +42,9 @@
         <div class="description-block">
             <h3>Содержание урока</h3>
             <div class="text-card">
-                <p>{{ content_rendered }}</p>
+                <div class="lesson-content">
+                    {{ content_rendered|safe }}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -64,46 +70,39 @@
         </div>
         {% endif %}
 
+        {% if lesson.video_filename and lesson.video_filename.strip() %}
         <div class="video-container">
-            {% if lesson.video_filename %}
-                {% if video_is_link %}
-                    {% if video_embed_url %}
-                        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
-                            <iframe src="{{ video_embed_url }}" frameborder="0" allowfullscreen
-                                    style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius: 12px;"></iframe>
-                        </div>
-                    {% else %}
-                        <div class="no-video-placeholder">
-                            <div style="text-align: center; padding: 40px 20px;">
-                                <p>Видео ссылка: <a href="{{ lesson.video_filename }}" target="_blank" rel="noopener">{{ lesson.video_filename }}</a></p>
-                            </div>
-                        </div>
-                    {% endif %}
+            {% if video_is_link %}
+                {% if video_embed_url %}
+                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+                        <iframe src="{{ video_embed_url }}" frameborder="0" allowfullscreen
+                                style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius: 12px;"></iframe>
+                    </div>
                 {% else %}
-                    <video
-                        id="lesson-video"
-                        width="940"
-                        height="617"
-                        controls
-                        controlsList="nodownload"
-                        oncontextmenu="return false;">
-                        <source src="{{ url_for('lessons.serve_file', filename=lesson.video_filename) }}" type="video/mp4">
-                        Ваш браузер не поддерживает видео.
-                    </video>
+                    <div class="no-video-placeholder">
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <p>Видео ссылка: <a href="{{ lesson.video_filename }}" target="_blank" rel="noopener">{{ lesson.video_filename }}</a></p>
+                        </div>
+                    </div>
                 {% endif %}
             {% else %}
-                <div class="no-video-placeholder">
-                    <div style="text-align: center; padding: 100px 20px;">
-                        <h2>📹 Видео отсутствует</h2>
-                        <p>К этому уроку еще не добавлено видео</p>
-                    </div>
-                </div>
+                <video
+                    id="lesson-video"
+                    width="940"
+                    height="617"
+                    controls
+                    controlsList="nodownload"
+                    oncontextmenu="return false;">
+                    <source src="{{ url_for('lessons.serve_file', filename=lesson.video_filename) }}" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
             {% endif %}
         </div>
+        {% endif %}
 
         <!-- Задания урока -->
         {% set assignments = lesson.assignments.all() %}
-        {% if assignments or can_edit %}
+        {% if assignments %}
         <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; margin-top: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
                 <h2 style="font-size: 24px; font-weight: 700; color: #081844; margin: 0;">
@@ -117,7 +116,6 @@
                 {% endif %}
             </div>
 
-            {% if assignments %}
             <div style="display: grid; gap: 15px;">
                 {% for assignment in assignments %}
                 {% set user_submission = None %}
@@ -184,12 +182,6 @@
                 </div>
                 {% endfor %}
             </div>
-            {% else %}
-            <div style="text-align: center; padding: 40px 20px; color: #666;">
-                <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
-                <p>В этом уроке пока нет заданий</p>
-            </div>
-            {% endif %}
         </div>
         {% endif %}
 
@@ -228,7 +220,7 @@
         </div>
         {% endif %}
 
-        {% if current_user and current_user.role == 'student' and not is_completed %}
+        {% if current_user and not is_completed %}
         <div class="description-block">
             <form id="finish-lesson-form" method="post" action="{{ url_for('lessons.mark_complete', lesson_id=lesson.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -324,7 +316,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/five.js') }}"></script>
 <script>
 // Автоматическая отметка при досмотре видео
 const video = document.getElementById('lesson-video');

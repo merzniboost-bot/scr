@@ -32,6 +32,20 @@
                           rows="6"
                           style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ course.description or '' }}</textarea>
             </div>
+<!-- После поля описания, перед кнопкой отправки -->
+<div class="form-group" style="margin-bottom: 25px;">
+    <label for="category_id" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Категория курса</label>
+    <select id="category_id" name="category_id" 
+            style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: white;">
+        <option value="" {% if not course.category_id %}selected{% endif %}>Без категории</option>
+        {% for category in categories %}
+        <option value="{{ category.id }}" {% if course.category_id == category.id %}selected{% endif %}>
+            {{ category.icon }} {{ category.name }}
+        </option>
+        {% endfor %}
+    </select>
+    <small style="color: #666; margin-top: 5px; display: block;">Категория определит цвет плашки курса</small>
+</div>
             
             <div class="form-group" style="margin-bottom: 25px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Текущее превью</label>

@@ -21,6 +21,8 @@
     box-sizing: border-box;
 }
 
+
+
 body {
     font-family: "Inter", sans-serif;
     color: var(--text-dark);
@@ -1562,4 +1564,23 @@ body.light-theme .empty-state {
         width: 100%;
         text-align: center;
     }
+}
+
+/* Индикатор загрузки поиска без сдвига */
+.admin-search-form input[type="search"] {
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.admin-search-form input[type="search"].loading {
+    border-color: #12A0F4;
+    box-shadow: 0 0 0 2px rgba(18, 160, 244, 0.2);
+    background-image: linear-gradient(90deg, transparent, rgba(18, 160, 244, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: searchLoading 1.5s infinite;
+}
+
+@keyframes searchLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }

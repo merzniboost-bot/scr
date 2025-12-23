@@ -3,7 +3,7 @@
 Маршруты курсов: список, просмотр, создание, редактирование, удаление
 """
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session, jsonify
-from models import db, Course, Lesson, Test, Question, User, UserProgress, Favorite, TestResult
+from models import db, Course, Lesson, Test, Question, User, UserProgress, Favorite, TestResult, Assignment, Submission, Category
 from decorators import login_required, role_required, course_owner_required
 from utils import save_file, delete_file, allowed_file, get_course_progress, is_course_favorite, get_lesson_progress_map, render_mini_content
 from datetime import datetime, timezone
@@ -146,28 +146,70 @@ def detail(course_id):
         can_edit = (user.role == 'admin' or course.creator_id == user.id)
         
         # Получаем тесты безопасно
+                # === ОБЪЕДИНЁННЫЙ СПИСОК МАТЕРИАЛОВ ===
+        materials = []
+
+        # 1. Добавляем уроки (сортируем по order)
+        for lesson in sorted(course.lessons, key=lambda l: l.order):
+            materials.append({
+                'type': 'lesson',
+                'id': lesson.id,
+                'title': lesson.title,
+                'description': render_mini_content(
+                    lesson.content[:300] + '...' if lesson.content and len(lesson.content) > 300 else (lesson.content or 'Нет описания')
+                ),
+                'created_at': lesson.created_at,
+                'order': lesson.order,
+                'video_filename': lesson.video_filename,
+                'file_filename': lesson.file_filename,
+                'open_at': lesson.open_at,
+            })
+
+        # 2. Добавляем тесты
         try:
-            tests = list(course.tests)
+            tests_list = list(course.tests)
         except Exception:
-            tests = Test.query.filter_by(course_id=course_id).all()
+            tests_list = Test.query.filter_by(course_id=course_id).all()
 
-        # Подготовка мини-рендера описаний уроков (жирный/курсив и т.п.)
-        lesson_previews = {
-            lesson.id: render_mini_content(
-                lesson.content[:400] + '...' if lesson.content and len(lesson.content) > 400 else lesson.content
-            )
-            for lesson in course.lessons
-        }
+        for test in tests_list:
+            try:
+                questions_count = len(test.questions)
+            except Exception:
+                questions_count = 0
 
+            materials.append({
+                'type': 'test',
+                'id': test.id,
+                'title': test.title,
+                'description': f'Тест из {questions_count} вопрос{"ов" if questions_count != 1 else "а"}',
+                'created_at': test.created_at,
+                'max_attempts': test.max_attempts,
+                'open_at': test.open_at,
+                'questions_count': questions_count,
+                'order': test.order or 999999,
+            })
+
+        # 3. Сортировка: уроки по order, тесты вставляются по дате создания
+        # Для этого создаём ключ сортировки: (приоритет типа, значение)
+        # Уроки имеют приоритет 0 и сортируются по order
+        # Тесты имеют приоритет 1 и сортируются по created_at
+
+        materials.sort(key=lambda x: x['order'])
+
+        from datetime import datetime
+        from utils import get_next_incomplete_material
+        next_material = get_next_incomplete_material(user.id, course.id)
+        
         return render_template('courses/detail.html',
                                course=course,
                                progress=progress,
                                is_favorite=is_fav,
                                lesson_progress=lesson_progress,
                                test_progress=test_progress,
-                               tests=tests,
+                               materials=materials,  # ← передаём новый список
                                can_edit=can_edit,
-                               lesson_previews=lesson_previews)
+                               now=datetime.utcnow(),
+                               next_material=next_material)
 
     except Exception as e:
         logger.error(f"[COURSES] ❌ Ошибка загрузки курса: {e}")
@@ -185,11 +227,13 @@ def create():
         try:
             title = request.form.get('title', '').strip()
             description = request.form.get('description', '').strip()
+            category_id = request.form.get('category_id', '').strip()
 
             # Валидация
             if not title:
                 flash('Введите название курса', 'error')
-                return render_template('courses/create.html')
+                categories = Category.query.filter_by(is_active=True).order_by(Category.name).all()
+                return render_template('courses/create.html', categories=categories)
 
             if len(title) < 5:
                 flash('Название курса должно содержать минимум 5 символов', 'error')
@@ -207,7 +251,8 @@ def create():
                 title=title,
                 description=description,
                 preview_filename=preview_filename,
-                creator_id=session['user_id']
+                creator_id=session['user_id'],
+                category_id=int(category_id) if category_id else None
             )
 
             db.session.add(course)
@@ -224,7 +269,9 @@ def create():
             flash('Ошибка при создании курса', 'error')
             return render_template('courses/create.html')
 
-    return render_template('courses/create.html')
+    # GET запрос - показываем форму с категориями
+    categories = Category.query.filter_by(is_active=True).order_by(Category.name).all()
+    return render_template('courses/create.html', categories=categories)
 
 
 @courses_bp.route('/<int:course_id>/edit', methods=['GET', 'POST'])
@@ -243,6 +290,7 @@ def edit(course_id):
         try:
             title = request.form.get('title', '').strip()
             description = request.form.get('description', '').strip()
+            category_id = request.form.get('category_id', '').strip()
 
             # Валидация
             if not title:
@@ -275,6 +323,7 @@ def edit(course_id):
             # Обновление данных
             course.title = title
             course.description = description
+            course.category_id = int(category_id) if category_id else None
             course.updated_at = datetime.now(timezone.utc)
 
             db.session.commit()
@@ -292,11 +341,13 @@ def edit(course_id):
     # Получаем уроки и тесты курса, отсортированные по порядку
     lessons = Lesson.query.filter_by(course_id=course_id).order_by(Lesson.order).all()
     tests = Test.query.filter_by(course_id=course_id).order_by(Test.created_at).all()
+    categories = Category.query.filter_by(is_active=True).order_by(Category.name).all()
     
     return render_template('courses/edit.html', 
                          course=course, 
                          lessons=lessons, 
-                         tests=tests)
+                         tests=tests,
+                         categories=categories)
 
 
 @courses_bp.route('/<int:course_id>/delete', methods=['POST'])
@@ -468,7 +519,8 @@ def course_students(course_id):
         lesson_user_ids = db.session.query(UserProgress.user_id).filter_by(course_id=course_id).distinct().all()
         lesson_user_ids = {row[0] for row in lesson_user_ids}
 
-        test_ids_subq = db.session.query(Test.id).filter_by(course_id=course_id).subquery()
+        from sqlalchemy import select
+        test_ids_subq = select(Test.id).filter_by(course_id=course_id)
         test_user_ids = db.session.query(TestResult.student_id).filter(TestResult.test_id.in_(test_ids_subq)).distinct().all()
         test_user_ids = {row[0] for row in test_user_ids}
 
@@ -478,6 +530,35 @@ def course_students(course_id):
             students = []
         else:
             users = User.query.filter(User.id.in_(all_user_ids)).order_by(User.fullname).all()
+
+            # Загружаем задания курса
+            assignment_ids = [
+                a.id for a in db.session.query(Assignment.id)
+                .join(Lesson, Assignment.lesson_id == Lesson.id)
+                .filter(Lesson.course_id == course_id)
+                .all()
+            ]
+
+            # Подтягиваем все сдачи по курсу одним запросом
+            submissions = []
+            if assignment_ids:
+                submissions = Submission.query.filter(
+                    Submission.assignment_id.in_(assignment_ids),
+                    Submission.student_id.in_(all_user_ids)
+                ).all()
+
+            submissions_by_student = {}
+            for s in submissions:
+                submissions_by_student.setdefault(s.student_id, []).append(s)
+
+            # Результаты тестов по курсу
+            test_results = TestResult.query.join(Test, TestResult.test_id == Test.id) \
+                .filter(Test.course_id == course_id, TestResult.student_id.in_(all_user_ids)).all()
+
+            tests_by_student = {}
+            for tr in test_results:
+                tests_by_student.setdefault(tr.student_id, []).append(tr)
+
             students = []
             for user in users:
                 progress = get_course_progress(user.id, course.id)
@@ -490,6 +571,8 @@ def course_students(course_id):
                     'lessons_total': progress['lessons_total'],
                     'tests_completed': progress['tests_completed'],
                     'tests_total': progress['tests_total'],
+                    'submissions': submissions_by_student.get(user.id, []),
+                    'test_results': tests_by_student.get(user.id, []),
                 })
 
         return render_template('courses/students.html',
@@ -667,3 +750,51 @@ def search():
         logger.error(f"[COURSES] ❌ Ошибка поиска: {e}")
         flash('Ошибка при поиске курсов', 'error')
         return redirect(url_for('courses.list'))
+
+@courses_bp.route('/<int:course_id>/reorder_materials', methods=['POST'])
+@course_owner_required
+def reorder_materials(course_id):
+    """
+    Сохранение нового порядка уроков и тестов после drag & drop
+    """
+    try:
+        data = request.get_json()
+        order_list = data.get('order', [])
+
+        if not order_list:
+            return jsonify({'success': False, 'error': 'Нет данных'}), 400
+
+        # Собираем все уроки и тесты курса
+        lessons = Lesson.query.filter_by(course_id=course_id).all()
+        tests = Test.query.filter_by(course_id=course_id).all()
+
+        # Создаём словари для быстрого поиска
+        lesson_map = {l.id: l for l in lessons}
+        test_map = {t.id: t for t in tests}
+
+        # Присваиваем новый порядок
+        new_order = 1
+        for item in order_list:
+            item_type = item['type']
+            item_id = int(item['id'])
+
+            if item_type == 'lesson' and item_id in lesson_map:
+                lesson_map[item_id].order = new_order
+            elif item_type == 'test' and item_id in test_map:
+                test_map[item_id].order = new_order
+
+            new_order += 1
+
+        db.session.commit()
+        
+        # Инвалидируем кэш материалов курса
+        from utils import invalidate_course_cache
+        invalidate_course_cache(course_id)
+
+        logger.info(f"[COURSES] 🔄 Порядок материалов обновлён для курса {course_id}")
+        return jsonify({'success': True})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[COURSES] ❌ Ошибка переупорядочивания: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

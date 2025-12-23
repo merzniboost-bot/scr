@@ -7,12 +7,88 @@ import uuid
 import pathlib
 import logging
 import base64
+from datetime import datetime, timedelta
+from threading import Lock
 from werkzeug.utils import secure_filename
+
+
+# ============================================================================
+# СИСТЕМА КЭШИРОВАНИЯ
+# ============================================================================
+
+class SimpleCache:
+    """Простой in-memory кэш с TTL"""
+    
+    def __init__(self, default_ttl=300):
+        """
+        Args:
+            default_ttl: Время жизни кэша в секундах (по умолчанию 5 минут)
+        """
+        self._cache = {}
+        self._lock = Lock()
+        self.default_ttl = default_ttl
+    
+    def get(self, key):
+        """Получить значение из кэша"""
+        with self._lock:
+            if key in self._cache:
+                value, expires_at = self._cache[key]
+                if datetime.now() < expires_at:
+                    return value
+                else:
+                    del self._cache[key]
+            return None
+    
+    def set(self, key, value, ttl=None):
+        """Установить значение в кэш"""
+        if ttl is None:
+            ttl = self.default_ttl
+        expires_at = datetime.now() + timedelta(seconds=ttl)
+        with self._lock:
+            self._cache[key] = (value, expires_at)
+    
+    def delete(self, key):
+        """Удалить значение из кэша"""
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+    
+    def invalidate_pattern(self, pattern):
+        """Инвалидировать все ключи, содержащие pattern"""
+        with self._lock:
+            keys_to_delete = [k for k in self._cache if pattern in k]
+            for key in keys_to_delete:
+                del self._cache[key]
+    
+    def clear(self):
+        """Очистить весь кэш"""
+        with self._lock:
+            self._cache.clear()
+
+
+# Глобальный экземпляр кэша
+cache = SimpleCache(default_ttl=300)  # 5 минут по умолчанию
+
+
+def invalidate_course_cache(course_id):
+    """Инвалидировать кэш для конкретного курса"""
+    cache.invalidate_pattern(f"course_{course_id}_")
+    logger.debug(f"[CACHE] Кэш инвалидирован для курса {course_id}")
 from config import UPLOAD_DIR, Config
 from zoneinfo import ZoneInfo
 from PIL import Image, ImageOps
 import io
 from markupsafe import Markup, escape
+import markdown
+import bleach
+try:
+    from bleach.css_sanitizer import CSSSanitizer
+except Exception:
+    CSSSanitizer = None
+try:
+    from bleach.sanitizer import Cleaner
+except Exception:
+    Cleaner = None
 
 logger = logging.getLogger(__name__)
 
@@ -70,49 +146,60 @@ def get_video_embed_url(url: str) -> str | None:
 
 def render_mini_content(text: str | None) -> Markup:
     """
-    Простейший рендер мини-разметки: **жирный**, *курсив*, __подчеркнутый__,
-    списки с "- " и ссылки вида [текст](https://...)
+    Рендер Markdown в безопасный HTML через единый пайплайн
     """
     if not text:
         return Markup("")
+    return Markup(markdown_to_html(text))
 
-    escaped = escape(text)
 
-    # Ссылки
-    escaped = re.sub(
-        r'\[([^\]]+)]\((https?://[^\s)]+)\)',
-        r'<a href="\2" target="_blank" rel="noopener">\1</a>',
-        escaped
-    )
-    # Жирный, курсив, подчёркнутый
-    escaped = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', escaped)
-    escaped = re.sub(r'\*(.+?)\*', r'<em>\1</em>', escaped)
-    escaped = re.sub(r'__(.+?)__', r'<u>\1</u>', escaped)
-
-    # Списки
-    lines = escaped.split('\n')
-    rendered_lines = []
-    in_list = False
-    for line in lines:
-        if line.strip().startswith('- '):
-            if not in_list:
-                rendered_lines.append('<ul>')
-                in_list = True
-            rendered_lines.append(f"<li>{line.strip()[2:]}</li>")
-        else:
-            if in_list:
-                rendered_lines.append('</ul>')
-                in_list = False
-            rendered_lines.append(line)
-    if in_list:
-        rendered_lines.append('</ul>')
-
-    escaped = '\n'.join(rendered_lines)
-
-    # Перевод строк
-    escaped = escaped.replace('\n', '<br>')
-
-    return Markup(escaped)
+def markdown_to_html(content, safe_mode=True):
+    """Конвертирует Markdown в HTML с поддержкой цветного текста"""
+    if not content:
+        return ""
+    
+    try:
+        import markdown
+        import bleach
+        
+        # Настройки Markdown с поддержкой HTML
+        html = markdown.markdown(
+            content,
+            extensions=['extra', 'fenced_code', 'tables', 'nl2br'],
+            output_format='html'
+        )
+        
+        if safe_mode:
+            # Безопасные теги
+            base_tags = list(bleach.sanitizer.ALLOWED_TAGS)
+            allowed_tags = base_tags + [
+                'span', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'br', 'hr', 'pre', 'code', 'blockquote',
+                'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
+            ]
+            
+            # Разрешенные атрибуты
+            allowed_attrs = {
+                'span': ['style', 'class'],
+                'div': ['style', 'class'],
+                'p': ['style', 'class'],
+                'a': ['href', 'title', 'target', 'rel'],
+                'img': ['src', 'alt', 'title', 'width', 'height'],
+                'code': ['class'],
+                'pre': ['class'],
+                'table': ['class', 'border'],
+                'td': ['colspan', 'rowspan'],
+                'th': ['colspan', 'rowspan']
+            }
+            
+            # Очищаем
+            html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
+        
+        return html
+        
+    except Exception as e:
+        logger.error(f"[UTILS] Ошибка конвертации Markdown: {e}")
+        return content
 
 
 def allowed_video_file(filename):
@@ -225,6 +312,68 @@ def save_data_url(data_url: str, prefix='file', target_size=(400, 250)):
             return f"{base_name}.webp"
     except Exception as e:
         logger.error(f"Ошибка обработки data-url файла: {e}")
+        return None
+
+
+def save_avatar(file, size=200):
+    """
+    Сохраняет аватарку с crop в квадрат и оптимизацией.
+    
+    Args:
+        file: FileStorage объект или data URL
+        size: размер квадрата (по умолчанию 200x200)
+    
+    Returns:
+        str: имя файла или None
+    """
+    if not file:
+        return None
+    
+    try:
+        # Если это data URL
+        if isinstance(file, str) and file.startswith('data:image/'):
+            header, b64data = file.split(',', 1)
+            raw = base64.b64decode(b64data)
+            img = Image.open(io.BytesIO(raw))
+        # Если это FileStorage
+        else:
+            if not file.filename:
+                return None
+            img = Image.open(file.stream)
+        
+        # Конвертируем в RGB
+        if img.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode in ("RGBA", "LA"):
+                background.paste(img, mask=img.split()[-1])
+            else:
+                background.paste(img)
+            img = background
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+        
+        # Crop в квадрат (центрированный)
+        width, height = img.size
+        if width > height:
+            left = (width - height) // 2
+            img = img.crop((left, 0, left + height, height))
+        elif height > width:
+            top = (height - width) // 2
+            img = img.crop((0, top, width, top + width))
+        
+        # Resize до нужного размера
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
+        
+        # Сохраняем
+        unique_filename = f"avatar_{uuid.uuid4().hex[:8]}.webp"
+        final_path = UPLOAD_DIR / unique_filename
+        img.save(final_path, 'WEBP', quality=90, method=6)
+        
+        logger.info(f"[UTILS] Аватарка сохранена: {unique_filename} ({size}x{size})")
+        return unique_filename
+        
+    except Exception as e:
+        logger.error(f"[UTILS] Ошибка сохранения аватарки: {e}")
         return None
 
 
@@ -398,6 +547,199 @@ def get_lesson_progress_map(user_id, course_id):
     progress_map = {lesson[0]: lesson[0] in completed_ids for lesson in lessons}
 
     return progress_map
+
+
+def get_course_materials(course_id, use_cache=True):
+    """
+    Получить все материалы курса (уроки + тесты) в правильном порядке
+    
+    Args:
+        course_id: ID курса
+        use_cache: Использовать кэш (по умолчанию True)
+    
+    Returns:
+        list: Список словарей с информацией о материалах
+              [{'type': 'lesson'|'test', 'id': int, 'order': int, 'obj': Lesson|Test}, ...]
+    """
+    from models import db, Lesson, Test
+    
+    cache_key = f"course_{course_id}_materials"
+    
+    # Пробуем получить из кэша (но obj нельзя кэшировать напрямую из-за сессии SQLAlchemy)
+    # Поэтому кэшируем только ID и order, объекты подгружаем заново
+    
+    try:
+        course_lessons = db.session.query(Lesson).filter_by(course_id=course_id).order_by(Lesson.order).all()
+        course_tests = db.session.query(Test).filter_by(course_id=course_id).order_by(Test.order).all()
+        
+        materials = []
+        for l in course_lessons:
+            materials.append({'type': 'lesson', 'id': l.id, 'order': l.order, 'obj': l})
+        for t in course_tests:
+            materials.append({'type': 'test', 'id': t.id, 'order': t.order or 999999, 'obj': t})
+        
+        materials.sort(key=lambda x: x['order'])
+        return materials
+        
+    except Exception as e:
+        logger.error(f"[MATERIALS] Ошибка получения материалов курса {course_id}: {e}")
+        return []
+
+
+def get_course_materials_cached_ids(course_id):
+    """
+    Получить ID материалов курса с кэшированием (без ORM объектов)
+    
+    Returns:
+        list: [{'type': 'lesson'|'test', 'id': int, 'order': int}, ...]
+    """
+    from models import db, Lesson, Test
+    
+    cache_key = f"course_{course_id}_material_ids"
+    
+    # Пробуем получить из кэша
+    cached = cache.get(cache_key)
+    if cached is not None:
+        logger.debug(f"[CACHE] HIT: {cache_key}")
+        return cached
+    
+    try:
+        # Запрашиваем только нужные поля
+        lessons_data = db.session.query(Lesson.id, Lesson.order).filter_by(course_id=course_id).all()
+        tests_data = db.session.query(Test.id, Test.order).filter_by(course_id=course_id).all()
+        
+        materials = []
+        for lid, lorder in lessons_data:
+            materials.append({'type': 'lesson', 'id': lid, 'order': lorder})
+        for tid, torder in tests_data:
+            materials.append({'type': 'test', 'id': tid, 'order': torder or 999999})
+        
+        materials.sort(key=lambda x: x['order'])
+        
+        # Кэшируем результат
+        cache.set(cache_key, materials, ttl=300)
+        logger.debug(f"[CACHE] SET: {cache_key}")
+        
+        return materials
+        
+    except Exception as e:
+        logger.error(f"[MATERIALS] Ошибка получения ID материалов курса {course_id}: {e}")
+        return []
+
+
+def get_test_analytics(course_id=None):
+    """
+    Получить аналитику по сложности тестов
+    
+    Args:
+        course_id: ID курса (если None - все тесты)
+    
+    Returns:
+        list: Список словарей с аналитикой по каждому тесту, отсортированный по сложности
+    """
+    from models import db, Test, TestResult
+    from sqlalchemy import func
+    
+    try:
+        # Базовый запрос
+        query = db.session.query(
+            Test.id,
+            Test.title,
+            Test.course_id,
+            func.count(TestResult.id).label('attempts'),
+            func.avg(TestResult.score * 100.0 / TestResult.total).label('avg_score'),
+            func.sum(
+                db.case((TestResult.score * 100.0 / TestResult.total < 60, 1), else_=0)
+            ).label('failed_count')
+        ).outerjoin(TestResult, Test.id == TestResult.test_id).group_by(Test.id)
+        
+        if course_id:
+            query = query.filter(Test.course_id == course_id)
+        
+        results = query.all()
+        
+        analytics = []
+        for row in results:
+            attempts = row.attempts or 0
+            avg_score = float(row.avg_score) if row.avg_score else 0
+            failed_count = row.failed_count or 0
+            failed_rate = (failed_count / attempts * 100) if attempts > 0 else 0
+            
+            analytics.append({
+                'test_id': row.id,
+                'title': row.title,
+                'course_id': row.course_id,
+                'attempts': attempts,
+                'avg_score': round(avg_score, 1),
+                'failed_count': failed_count,
+                'failed_rate': round(failed_rate, 1),
+                'difficulty': 'high' if failed_rate > 50 else ('medium' if failed_rate > 30 else 'low')
+            })
+        
+        # Сортируем по проценту неудач (самые сложные первыми)
+        analytics.sort(key=lambda x: -x['failed_rate'])
+        
+        return analytics
+        
+    except Exception as e:
+        logger.error(f"[ANALYTICS] Ошибка получения аналитики тестов: {e}")
+        return []
+
+
+def get_next_incomplete_material(user_id, course_id):
+    """
+    Получить следующий незавершенный материал курса для пользователя
+    
+    Args:
+        user_id: ID пользователя
+        course_id: ID курса
+    
+    Returns:
+        dict или None: {'type': 'lesson'|'test', 'id': int, 'title': str} или None если всё пройдено
+    """
+    from models import db, UserProgress, TestResult
+    
+    try:
+        materials = get_course_materials(course_id)
+        
+        # Получаем прогресс по урокам
+        completed_lessons = set()
+        lesson_progress = db.session.query(UserProgress.lesson_id).filter(
+            UserProgress.user_id == user_id,
+            UserProgress.course_id == course_id,
+            UserProgress.completed == True
+        ).all()
+        for lp in lesson_progress:
+            completed_lessons.add(lp.lesson_id)
+        
+        # Получаем прогресс по тестам
+        completed_tests = set()
+        test_results = db.session.query(TestResult.test_id).filter(
+            TestResult.student_id == user_id
+        ).distinct().all()
+        for tr in test_results:
+            completed_tests.add(tr.test_id)
+        
+        # Ищем первый незавершенный материал
+        for mat in materials:
+            if mat['type'] == 'lesson' and mat['id'] not in completed_lessons:
+                return {
+                    'type': 'lesson',
+                    'id': mat['id'],
+                    'title': mat['obj'].title
+                }
+            elif mat['type'] == 'test' and mat['id'] not in completed_tests:
+                return {
+                    'type': 'test',
+                    'id': mat['id'],
+                    'title': mat['obj'].title
+                }
+        
+        return None  # Всё пройдено
+        
+    except Exception as e:
+        logger.error(f"[NAV] Ошибка получения следующего материала: {e}")
+        return None
 
 
 def format_datetime(dt):

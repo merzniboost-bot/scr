@@ -14,6 +14,11 @@
         <div style="text-align: center; margin-bottom: 40px;">
             <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">{{ test.title }}</h1>
             <p style="color: #666; font-size: 16px;">Курс: {{ test.course.title }}</p>
+            {% if current_position and total_materials %}
+            <p style="color: #FF9800; font-size: 14px; font-weight: 600; margin-top: 8px;">
+                📝 Элемент {{ current_position }} из {{ total_materials }}
+            </p>
+            {% endif %}
             <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <div style="padding: 15px; background: #e3f2fd; border-radius: 10px; display: inline-block;">
                     <span style="color: #1976d2; font-weight: 600;">Вопросов: {{ questions|length }}</span>

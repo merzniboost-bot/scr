@@ -375,6 +375,12 @@ body::before {
     margin-bottom: 24px;
     opacity: 0.5;
 }
+* {
+    /* background: (var(--card-dark)); */
+    margin: 0;
+    padding: 0;
+    /*box-sizing: border-box;*/
+}
 
 .empty-state h2 {
     font-size: 24px;
@@ -408,6 +414,11 @@ body::before {
     box-shadow: 0 8px 20px rgba(18, 160, 244, 0.3);
 }
 
+body .card {
+    background: var(--card-dark);
+}
+
+
 /* ===== ОБЩАЯ СТАТИСТИКА ===== */
 .overall-stats {
     background: var(--card-bg);
@@ -420,7 +431,6 @@ body::before {
 .overall-stats h2 {
     font-size: 24px;
     margin-bottom: 32px;
-    color: var(--text-dark);
     text-align: center;
 }
 

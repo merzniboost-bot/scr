@@ -115,11 +115,85 @@
                             Завершено <strong>{{ progress.completed }}</strong> из <strong>{{ progress.total }}</strong> элементов
                         {% endif %}
                     </p>
+                    
+                    <!-- Визуальная дорожка прогресса -->
+                    {% if materials %}
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                        <div style="font-weight: 600; color: #081844; margin-bottom: 15px; font-size: 14px;">📍 Путь обучения:</div>
+                        <div style="display: flex; align-items: center; overflow-x: auto; padding: 10px 0; gap: 0;">
+                            {% for item in materials %}
+                                {% set is_lesson = item.type == 'lesson' %}
+                                {% set is_completed = (is_lesson and lesson_progress.get(item.id)) or (not is_lesson and test_progress.get(item.id, {}).get('completed')) %}
+                                {% set is_passed = not is_lesson and test_progress.get(item.id, {}).get('passed') %}
+                                {% set is_locked = item.open_at and item.open_at > now %}
+                                
+                                <!-- Шаг -->
+                                <div style="display: flex; flex-direction: column; align-items: center; min-width: 60px; position: relative;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
+                                        {% if is_completed %}
+                                            background: linear-gradient(135deg, #4CAF50, #45a049); color: white; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+                                        {% elif is_locked %}
+                                            background: #e0e0e0; color: #999;
+                                        {% else %}
+                                            background: white; border: 3px solid {% if is_lesson %}#12A0F4{% else %}#FF9800{% endif %}; color: {% if is_lesson %}#12A0F4{% else %}#FF9800{% endif %};
+                                        {% endif %}">
+                                        {% if is_completed %}✓{% elif is_locked %}🔒{% else %}{{ loop.index }}{% endif %}
+                                    </div>
+                                    <div style="font-size: 10px; color: #666; margin-top: 4px; text-align: center; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ item.title }}">
+                                        {% if is_lesson %}📖{% else %}📝{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Соединительная линия -->
+                                {% if not loop.last %}
+                                <div style="flex: 1; height: 3px; min-width: 20px; max-width: 40px;
+                                    {% if is_completed %}
+                                        background: linear-gradient(90deg, #4CAF50, #4CAF50);
+                                    {% else %}
+                                        background: #e0e0e0;
+                                    {% endif %}">
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Быстрая навигация -->
+    {% if next_material and progress and not progress.is_completed %}
+    <div style="background: linear-gradient(135deg, #4CAF50, #81C784); border-radius: 20px; padding: 25px 30px; margin: 30px 0; box-shadow: 0 8px 30px rgba(76, 175, 80, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div style="color: white;">
+                <div style="font-weight: 600; font-size: 18px; margin-bottom: 5px;">🚀 Продолжить обучение</div>
+                <div style="opacity: 0.9; font-size: 14px;">
+                    Следующий шаг: <strong>{{ next_material.title }}</strong>
+                </div>
+            </div>
+            {% if next_material.type == 'lesson' %}
+            <a href="{{ url_for('lessons.detail', lesson_id=next_material.id) }}" 
+               style="padding: 14px 28px; background: white; color: #4CAF50; text-decoration: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s;">
+                Перейти к уроку →
+            </a>
+            {% else %}
+            <a href="{{ url_for('tests.take', test_id=next_material.id) }}" 
+               style="padding: 14px 28px; background: white; color: #4CAF50; text-decoration: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s;">
+                Пройти тест →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% elif progress and progress.is_completed %}
+    <div style="background: linear-gradient(135deg, #FFD700, #FFA500); border-radius: 20px; padding: 25px 30px; margin: 30px 0; box-shadow: 0 8px 30px rgba(255, 215, 0, 0.3); text-align: center;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🎉</div>
+        <div style="color: #333; font-weight: 700; font-size: 20px;">Поздравляем! Курс полностью пройден!</div>
+        <div style="color: #555; font-size: 14px; margin-top: 5px;">Вы успешно завершили все материалы этого курса</div>
+    </div>
+    {% endif %}
 
     <!-- Управление курсом -->
     {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
@@ -139,200 +213,234 @@
     {% endif %}
     
     <!-- Уроки курса -->
-    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <!-- ЕДИНЫЙ БЛОК МАТЕРИАЛОВ КУРСА -->
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; margin-top: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
             <h2 style="font-size: 28px; font-weight: 700; color: #081844; margin: 0;">
-                📚 Уроки курса ({{ course.lessons|length }})
+                📚 Материалы курса ({{ materials|length }})
             </h2>
-            {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
-                <a href="{{ url_for('lessons.add', course_id=course.id) }}" 
-                   style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px;">
-                    <span>+</span>
-                    <span>Добавить урок</span>
-                </a>
-            {% endif %}
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
+                    <a href="{{ url_for('lessons.add', course_id=course.id) }}" 
+                       style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                        + Добавить урок
+                    </a>
+                    <a href="{{ url_for('tests.create', course_id=course.id) }}" 
+                       style="padding: 12px 24px; background: linear-gradient(135deg, #FF9800, #F57C00); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                        + Добавить тест
+                    </a>
+                {% endif %}
+            </div>
         </div>
-        
-        {% if course.lessons %}
-            <div style="display: grid; gap: 20px;">
-                {% for lesson in course.lessons %}
-                <div class="lesson-item" 
-                     style="padding: 25px; 
-                            background: linear-gradient(135deg, 
-                                {% if lesson_progress and lesson_progress.get(lesson.id) %}
-                                    #e8f5e9 0%, #f1f8e9 100%
-                                {% else %}
-                                    #f8f9fa 0%, #ffffff 100%
-                                {% endif %}); 
-                            border: 2px solid {% if lesson_progress and lesson_progress.get(lesson.id) %}#4caf50{% else %}#e0e0e0{% endif %}; 
-                            border-radius: 15px; 
-                            transition: all 0.3s ease; 
-                            position: relative; 
-                            overflow: hidden;">
-                    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(180deg, #12A0F4, #0A5D8E);"></div>
+
+        {% if materials %}
+            <div class="materials-grid" style="display: grid; gap: 20px;">
+                {% for item in materials %}
+                    <div class="material-item" 
+                        data-type="{{ item.type }}" 
+                        data-id="{{ item.id }}"
+                        style="cursor: grab; padding: 25px; 
+                                background: linear-gradient(135deg, 
+                                    {% if item.type == 'lesson' and lesson_progress.get(item.id) %}#e8f5e9, #f1f8e9
+                                    {% elif item.type == 'test' and test_progress.get(item.id, {}).get('completed') %}
+                                        {% if test_progress.get(item.id, {}).get('passed') %}#e8f5e9, #f1f8e9{% else %}#fff3e0, #fff8e1{% endif %}
+                                    {% else %}#f8f9fa, #ffffff{% endif %}); 
+                                border: 2px solid 
+                                    {% if item.type == 'lesson' and lesson_progress.get(item.id) %}#4caf50
+                                    {% elif item.type == 'test' and test_progress.get(item.id, {}).get('passed') %}#4caf50
+                                    {% elif item.type == 'test' and test_progress.get(item.id, {}).get('completed') %}#FF9800
+                                    {% else %}#e0e0e0{% endif %}; 
+                                border-radius: 15px; 
+                                position: relative; overflow: hidden;">
                     
-                    <div style="display: flex; gap: 20px; align-items: flex-start;">
-                        <div style="flex-shrink: 0; width: 60px; height: 60px; background: linear-gradient(135deg, #12A0F4, #0A5D8E); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);">
-                            {{ lesson.order }}
+                    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 5px; 
+                                background: linear-gradient(180deg, 
+                                    {% if item.type == 'lesson' %}#12A0F4, #0A5D8E{% else %}#FF9800, #F57C00{% endif %});"></div>
+
+                    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                        <div style="flex-shrink: 0; width: 60px; height: 60px; 
+                            background: linear-gradient(135deg, 
+                                {% if item.type == 'lesson' %}#12A0F4, #0A5D8E{% else %}#FF9800, #F57C00{% endif %}); 
+                            border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px;">
+                            <span class="order-number">1</span> <!-- JS будет обновлять это число -->
                         </div>
-                        
+
                         <div style="flex: 1;">
-                            <h3 style="font-size: 20px; font-weight: 600; color: #081844; margin-bottom: 10px;">
-                                {{ lesson.title }}
-                            </h3>
-                            <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">
-                                {{ (lesson_previews.get(lesson.id) or 'Описание отсутствует') | safe }}
-                            </p>
-                            
-                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                                {% if lesson_progress and lesson_progress.get(lesson.id) %}
-                                    <span style="padding: 8px 16px; background: #4CAF50; color: white; border-radius: 25px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px rgba(76,175,80,0.3);">
-                                        ✓ Завершено
-                                    </span>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <span style="padding: 6px 14px; background: {% if item.type == 'lesson' %}#0A5D8E{% else %}#F97316{% endif %}; color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                    {% if item.type == 'lesson' %}Урок{% else %}Тест{% endif %}
+                                </span>
+                                <span style="color: #888; font-size: 13px;">
+                                    Добавлено {{ item.created_at.strftime('%d.%m.%Y в %H:%M') }}
+                                </span>
+                            </div>
+
+                            <h3 style="font-size: 20px; font-weight: 600; color: #081844; margin: 10px 0;">
+                                {% if item.type == 'lesson' %}
+                                    Урок {{ item.order }}: {{ item.title }}
                                 {% else %}
-                                    <span style="padding: 8px 16px; background: #e0e0e0; color: #666; border-radius: 25px; font-size: 13px; font-weight: 600;">
-                                        Не начат
-                                    </span>
+                                    {{ item.title }}
                                 {% endif %}
-                                
-                                {% if lesson.video_filename %}
-                                    <span style="padding: 6px 12px; background: #e3f2fd; color: #1976d2; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                                        📹 Видео
-                                    </span>
+                            </h3>
+
+                            <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">
+                                {{ item.description | safe }}
+                            </p>
+
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                {% if item.type == 'lesson' %}
+                                    {% if lesson_progress.get(item.id) %}
+                                        <span style="padding: 8px 16px; background: #4CAF50; color: white; border-radius: 25px; font-size: 13px; font-weight: 700;">✓ Завершено</span>
+                                    {% else %}
+                                        <span style="padding: 8px 16px; background: #e0e0e0; color: #666; border-radius: 25px; font-size: 13px;">Не начат</span>
+                                    {% endif %}
+
+                                    {% if item.video_filename %}
+                                        <span style="padding: 6px 12px; background: #e3f2fd; color: #1976d2; border-radius: 20px; font-size: 12px;">📹 Видео</span>
+                                    {% endif %}
+                                    {% if item.file_filename %}
+                                        <span style="padding: 6px 12px; background: #fff3e0; color: #f57c00; border-radius: 20px; font-size: 12px;">📎 Материалы</span>
+                                    {% endif %}
+                                {% else %}
+                                    {% set tp = test_progress.get(item.id, {}) %}
+                                    {% if tp.get('completed') %}
+                                        <span style="padding: 8px 16px; background: {% if tp.get('passed') %}#4CAF50{% else %}#FF9800{% endif %}; color: white; border-radius: 25px; font-size: 13px; font-weight: 700;">
+                                            {% if tp.get('passed') %}✓ Пройден{% else %}Результат: {{ tp.percent }}%{% endif %}
+                                        </span>
+                                        <span style="color: #666; font-size: 13px;">Попыток: {{ tp.attempts }}</span>
+                                    {% else %}
+                                        <span style="padding: 8px 16px; background: #e0e0e0; color: #666; border-radius: 25px; font-size: 13px;">Не пройден</span>
+                                    {% endif %}
                                 {% endif %}
-                                
-                                {% if lesson.file_filename %}
-                                    <span style="padding: 6px 12px; background: #fff3e0; color: #f57c00; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                                        📎 Материалы
+
+                                {% if item.open_at %}
+                                    <span style="color: #D32F2F; font-size: 13px; font-weight: 600;">
+                                        ⏰ Доступен с {{ item.open_at.strftime('%d.%m.%Y в %H:%M') }}
                                     </span>
                                 {% endif %}
                             </div>
                         </div>
-                        
-                        <div style="flex-shrink: 0;">
-                            <a href="{{ url_for('lessons.detail', lesson_id=lesson.id) }}" 
-                               style="padding: 12px 24px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s ease; display: inline-block; white-space: nowrap;">
-                                Открыть урок →
-                            </a>
+
+                        <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                            {% if item.type == 'lesson' %}
+                                <a href="{{ url_for('lessons.detail', lesson_id=item.id) }}" 
+                                   style="padding: 12px 24px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 12px; font-weight: 600;">
+                                    Открыть урок →
+                                </a>
+                                {% if can_edit %}
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="{{ url_for('lessons.edit', lesson_id=item.id) }}" 
+                                       style="padding: 8px 16px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                        ✏️ Редактировать
+                                    </a>
+                                    <a href="{{ url_for('lessons.statistics', lesson_id=item.id) }}" 
+                                       style="padding: 8px 16px; background: #e3f2fd; color: #1976d2; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                        📊 Статистика
+                                    </a>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('tests.take', test_id=item.id) }}" 
+                                   style="padding: 12px 24px; background: linear-gradient(135deg, #FF9800, #F57C00); color: white; text-decoration: none; border-radius: 12px; font-weight: 600;">
+                                    {% if test_progress.get(item.id, {}).get('completed') %}Пройти снова{% else %}Пройти тест{% endif %} →
+                                </a>
+                                {% if can_edit %}
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="{{ url_for('tests.edit', test_id=item.id) }}" 
+                                       style="padding: 8px 16px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                        ✏️ Редактировать
+                                    </a>
+                                    <a href="{{ url_for('tests.manage', test_id=item.id) }}" 
+                                       style="padding: 8px 16px; background: #fff3e0; color: #e65100; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                        📝 Вопросы
+                                    </a>
+                                </div>
+                                {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">📖</div>
-                <h3 style="color: #081844; margin-bottom: 10px;">В этом курсе пока нет уроков</h3>
-                <p style="color: #666; margin-bottom: 30px;">Уроки - это этапы курса, которые студенты проходят последовательно</p>
-                {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
-                    <a href="{{ url_for('lessons.add', course_id=course.id) }}" 
-                       style="padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block;">
-                        + Добавить первый урок
-                    </a>
-                {% endif %}
+            <div style="text-align: center; padding: 80px 20px;">
+                <div style="font-size: 80px; opacity: 0.3; margin-bottom: 20px;">📚</div>
+                <h3 style="color: #081844;">В курсе пока нет материалов</h3>
+                <p style="color: #666; font-size: 16px;">Добавьте уроки и тесты, чтобы начать обучение</p>
             </div>
         {% endif %}
     </div>
-    
-    <!-- ОБНОВЛЕННЫЙ БЛОК ТЕСТОВ -->
-    {% if course.tests or (current_user and (current_user.id == course.creator_id or current_user.role == 'admin')) %}
-    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; margin-top: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
-            <h2 style="font-size: 28px; font-weight: 700; color: #081844; margin: 0;">
-                📝 Тесты курса ({{ course.tests|length }})
-            </h2>
-            {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
-                <a href="{{ url_for('tests.create', course_id=course.id) }}" 
-                   style="padding: 12px 24px; background: linear-gradient(135deg, #FF9800, #F57C00); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px;">
-                    <span>+</span>
-                    <span>Добавить тест</span>
-                </a>
-            {% endif %}
-        </div>
-        
-        {% if course.tests %}
-        <div style="display: grid; gap: 15px;">
-            {% for test in course.tests %}
-            {% set tp = test_progress.get(test.id, {}) if test_progress else {} %}
-            <div style="padding: 25px; 
-                        background: linear-gradient(135deg, 
-                            {% if tp.get('passed') %}
-                                #e8f5e9 0%, #f1f8e9 100%
-                            {% elif tp.get('completed') %}
-                                #fff3e0 0%, #fff8e1 100%
-                            {% else %}
-                                #f8f9fa 0%, #ffffff 100%
-                            {% endif %}); 
-                        border: 2px solid {% if tp.get('passed') %}#4caf50{% elif tp.get('completed') %}#FF9800{% else %}#e0e0e0{% endif %}; 
-                        border-radius: 15px; 
-                        border-left: 5px solid #FF9800;">
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                    <!-- Иконка статуса -->
-                    <div style="flex-shrink: 0; width: 60px; height: 60px; 
-                                background: linear-gradient(135deg, 
-                                    {% if tp.get('passed') %}#4CAF50, #45a049
-                                    {% elif tp.get('completed') %}#FF9800, #F57C00
-                                    {% else %}#9e9e9e, #757575{% endif %}); 
-                                border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-                        {% if tp.get('passed') %}✓{% elif tp.get('completed') %}!{% else %}?{% endif %}
-                    </div>
-                    
-                    <div style="flex: 1;">
-                        <h3 style="font-size: 20px; font-weight: 600; color: #081844; margin-bottom: 8px;">{{ test.title }}</h3>
-                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <span style="color: #666; font-size: 14px;">
-                                📋 {{ test.questions|length }} вопрос{{ 'ов' if test.questions|length != 1 else '' }}
-                            </span>
-                            
-                            {% if tp.get('completed') %}
-                                <span style="padding: 6px 14px; 
-                                            background: {% if tp.get('passed') %}#4CAF50{% else %}#FF9800{% endif %}; 
-                                            color: white; 
-                                            border-radius: 20px; 
-                                            font-size: 13px; 
-                                            font-weight: 600;">
-                                    {% if tp.get('passed') %}
-                                        ✓ Пройден ({{ tp.percent }}%)
-                                    {% else %}
-                                        Результат: {{ tp.percent }}%
-                                    {% endif %}
-                                </span>
-                                <span style="color: #666; font-size: 13px;">
-                                    🏆 {{ tp.score }}/{{ tp.total }} | 🔄 Попыток: {{ tp.attempts }}
-                                </span>
-                            {% else %}
-                                <span style="padding: 6px 14px; background: #e0e0e0; color: #666; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                                    Не пройден
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div style="flex-shrink: 0; display: flex; gap: 10px;">
-                        <a href="{{ url_for('tests.take', test_id=test.id) }}" 
-                           style="padding: 12px 24px; background: linear-gradient(135deg, #FF9800, #F57C00); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s ease; display: inline-block; white-space: nowrap;">
-                            {% if tp.get('completed') %}Пройти снова{% else %}Пройти тест{% endif %} →
-                        </a>
-                        
-                        {% if current_user and (current_user.id == course.creator_id or current_user.role == 'admin') %}
-                        <a href="{{ url_for('tests.edit', test_id=test.id) }}" 
-                           style="padding: 12px 16px; background: #f0f0f0; color: #666; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s ease;">
-                            ✏️
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">📝</div>
-                <h3 style="color: #081844; margin-bottom: 10px;">В этом курсе пока нет тестов</h3>
-                <p style="color: #666; margin-bottom: 30px;">Тесты помогают проверить знания студентов</p>
-            </div>
-        {% endif %}
-    </div>
-    {% endif %}
-</div>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canEdit = {{ 'true' if can_edit else 'false' }};
+    if (!canEdit) return;
+
+    const grid = document.querySelector('.materials-grid');
+    if (!grid) return;
+
+    // Функция для обновления номеров (1, 2, 3...)
+    function updateOrderNumbers() {
+        const items = grid.querySelectorAll('.material-item');
+        items.forEach((item, index) => {
+            const numberEl = item.querySelector('.order-number'); // класс добавим ниже
+            if (numberEl) {
+                numberEl.textContent = index + 1;
+            }
+        });
+    }
+
+    // Изначально проставляем номера
+    updateOrderNumbers();
+
+    // Добавляем визуальный курсор
+    document.querySelectorAll('.material-item').forEach(item => {
+        item.style.cursor = 'grab';
+        item.addEventListener('mousedown', () => item.style.cursor = 'grabbing');
+        item.addEventListener('mouseup', () => item.style.cursor = 'grab');
+    });
+
+    new Sortable(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+
+        onEnd: function(evt) {
+            // Обновляем номера сразу после перетаскивания
+            updateOrderNumbers();
+
+            // Собираем новый порядок для отправки на сервер
+            const items = Array.from(grid.children);
+            const order = items.map(item => ({
+                type: item.dataset.type,
+                id: item.dataset.id
+            }));
+
+            fetch(`/courses/{{ course.id }}/reorder_materials`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ order: order })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Порядок сохранён');
+                    // Можно добавить уведомление: "Порядок обновлён"
+                } else {
+                    alert('Ошибка сохранения порядка');
+                    // При ошибке можно вернуть старый порядок, но пока просто алерт
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                alert('Ошибка сети');
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

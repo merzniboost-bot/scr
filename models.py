@@ -1,4 +1,3 @@
-# models.py
 """
 Модели базы данных
 """
@@ -36,6 +35,7 @@ class User(db.Model):
 
     # Relationships
     group_rel = db.relationship('Group', backref='students')
+    created_categories = db.relationship('Category', foreign_keys='Category.created_by', backref='creator')
 
     def set_password(self, password):
         """Установить хешированный пароль"""
@@ -62,6 +62,27 @@ class Group(db.Model):
         return f'<Group {self.name}>'
 
 
+class Category(db.Model):
+    """Категории курсов"""
+    __tablename__ = 'categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    description = db.Column(db.String(255), default='')
+    color = db.Column(db.String(7), default='#12A0F4')
+    icon = db.Column(db.String(50), default='📚')
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=now_msk)
+    updated_at = db.Column(db.DateTime, default=now_msk, onupdate=now_msk)
+
+    # Relationships
+    courses = db.relationship('Course', back_populates='category', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Category {self.name}>'
+
+
 class Course(db.Model):
     """Курс обучения"""
     __tablename__ = 'courses'
@@ -70,13 +91,14 @@ class Course(db.Model):
     title = db.Column(db.String(255), nullable=False, index=True)
     description = db.Column(db.Text)
     preview_filename = db.Column(db.String(512))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=now_msk)
-    updated_at = db.Column(db.DateTime, default=now_msk,
-                           onupdate=now_msk)
+    updated_at = db.Column(db.DateTime, default=now_msk, onupdate=now_msk)
 
     # Relationships
     creator = db.relationship('User', foreign_keys=[creator_id], backref='created_courses')
+    category = db.relationship('Category', foreign_keys=[category_id], back_populates='courses')
     lessons = db.relationship('Lesson', back_populates='course', cascade='all, delete-orphan',
                             order_by='Lesson.order', lazy='select')
     tests = db.relationship('Test', back_populates='course', cascade='all, delete-orphan', lazy='select')
@@ -85,23 +107,47 @@ class Course(db.Model):
         return f'<Course {self.title}>'
 
 
+class Module(db.Model):
+    """Модуль курса - группа уроков и тестов"""
+    __tablename__ = 'modules'
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    order = db.Column(db.Integer, default=0, index=True)
+    is_visible = db.Column(db.Boolean, default=True)
+    open_at = db.Column(db.DateTime, nullable=True)  # Когда модуль станет доступен
+    created_at = db.Column(db.DateTime, default=now_msk)
+
+    # Relationships
+    course = db.relationship('Course', backref=db.backref('modules', order_by='Module.order', cascade='all, delete-orphan'))
+    lessons = db.relationship('Lesson', back_populates='module', order_by='Lesson.order')
+
+    def __repr__(self):
+        return f'<Module {self.title}>'
+
+
 class Lesson(db.Model):
     """Урок в курсе"""
     __tablename__ = 'lessons'
 
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id', ondelete='SET NULL'), nullable=True, index=True)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text)
     video_filename = db.Column(db.String(512))
     file_filename = db.Column(db.String(512))
     order = db.Column(db.Integer, default=0, index=True)
     created_at = db.Column(db.DateTime, default=now_msk)
-    updated_at = db.Column(db.DateTime, default=now_msk,
-                           onupdate=now_msk)
+    updated_at = db.Column(db.DateTime, default=now_msk, onupdate=now_msk)
+    open_at = db.Column(db.DateTime, nullable=True)  # Когда урок станет доступен студентам
 
     # Relationships
     course = db.relationship('Course', back_populates='lessons')
+    module = db.relationship('Module', back_populates='lessons')
+    assignments = db.relationship('Assignment', back_populates='lesson', cascade='all, delete-orphan', lazy='dynamic')
 
     def __repr__(self):
         return f'<Lesson {self.title}>'
@@ -113,13 +159,19 @@ class Test(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id', ondelete='SET NULL'), nullable=True, index=True)
     title = db.Column(db.String(255), nullable=False)
-    max_attempts = db.Column(db.Integer, default=0, nullable=False)  # 0 = неограниченно
+    max_attempts = db.Column(db.Integer, default=0, nullable=False)
+    open_at = db.Column(db.DateTime, nullable=True)  # Время открытия теста для студентов
     created_at = db.Column(db.DateTime, default=now_msk)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    order = db.Column(db.Integer, nullable=False, default=1)
 
     # Relationships
     course = db.relationship('Course', back_populates='tests')
+    module = db.relationship('Module', backref='tests')
     questions = db.relationship('Question', back_populates='test', cascade='all, delete-orphan', lazy='select')
+    results = db.relationship('TestResult', back_populates='test', lazy=True)
 
     def __repr__(self):
         return f'<Test {self.title}>'
@@ -208,8 +260,8 @@ class Favorite(db.Model):
 
     def __repr__(self):
         return f'<Favorite user={self.user_id} course={self.course_id}>'
-    
-    
+
+
 class Assignment(db.Model):
     """Задание для урока с загрузкой файла"""
     __tablename__ = 'assignments'
@@ -217,17 +269,16 @@ class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete='CASCADE'), nullable=False, index=True)
     title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text)  # Описание задания
-    deadline = db.Column(db.DateTime, nullable=True)  # Дедлайн (опционально)
-    max_file_size_mb = db.Column(db.Integer, default=10)  # Макс размер файла в МБ
+    description = db.Column(db.Text)
+    deadline = db.Column(db.DateTime, nullable=True)
+    max_file_size_mb = db.Column(db.Integer, default=10)
     allowed_extensions = db.Column(db.String(255), default='pdf,doc,docx,txt,zip,rar,py,js,html,css')
-    is_required = db.Column(db.Boolean, default=True)  # Обязательное задание
+    is_required = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=now_msk)
-    updated_at = db.Column(db.DateTime, default=now_msk,
-                           onupdate=now_msk)
+    updated_at = db.Column(db.DateTime, default=now_msk, onupdate=now_msk)
 
     # Relationships
-    lesson = db.relationship('Lesson', backref=db.backref('assignments', lazy='dynamic', cascade='all, delete-orphan'))
+    lesson = db.relationship('Lesson', back_populates='assignments')
     submissions = db.relationship('Submission', back_populates='assignment', cascade='all, delete-orphan', lazy='dynamic')
 
     def get_allowed_extensions_list(self):
@@ -254,14 +305,14 @@ class Submission(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Файл
-    file_filename = db.Column(db.String(512), nullable=False)  # Сохраненное имя файла
-    original_filename = db.Column(db.String(255), nullable=False)  # Оригинальное имя файла
-    file_size = db.Column(db.Integer, default=0)  # Размер в байтах
+    file_filename = db.Column(db.String(512), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer, default=0)
     
     # Статус и оценка
-    status = db.Column(db.String(20), default='submitted', index=True)  # submitted, reviewed, approved, rejected
-    grade = db.Column(db.Integer, nullable=True)  # Оценка (0-100 или null)
-    feedback = db.Column(db.Text, nullable=True)  # Комментарий преподавателя
+    status = db.Column(db.String(20), default='submitted', index=True)
+    grade = db.Column(db.Integer, nullable=True)
+    feedback = db.Column(db.Text, nullable=True)
     
     # Время
     submitted_at = db.Column(db.DateTime, default=now_msk)
@@ -269,7 +320,7 @@ class Submission(db.Model):
     
     # Relationships
     assignment = db.relationship('Assignment', back_populates='submissions')
-    student = db.relationship('User', foreign_keys=[student_id], backref=db.backref('submissions', lazy='dynamic'))
+    student = db.relationship('User', foreign_keys=[student_id])
 
     # Indexes
     __table_args__ = (

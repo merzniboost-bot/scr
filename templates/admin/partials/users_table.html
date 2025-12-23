@@ -1,0 +1,80 @@
+{% if users %}
+{% for u in users %}
+<tr class="user-row" data-user-id="{{ u.id }}">
+    <td>
+        <div class="user-info">
+            <div class="user-avatar">
+                {% if u.id == current_user.id %}
+                    {% if current_user.avatar_filename %}
+                        <img style="border-radius: 50%;" src="{{ url_for('lessons.serve_file', filename=current_user.avatar_filename) }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ current_user.fullname[:2]|upper }}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if u.avatar_filename %}
+                        <img src="{{ url_for('lessons.serve_file', filename=u.avatar_filename) }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ u.fullname[:2]|upper }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="user-details">
+                <div class="user-name">{{ u.fullname }}</div>
+                <div class="user-email">{{ u.email }}</div>
+            </div>
+        </div>
+    </td>
+    <td>{{ u.group_rel.name if u.group_rel else '—' }}</td>
+    <td>
+        {% if u.role == 'admin' %}
+            <span class="role-badge admin">Администратор</span>
+        {% elif u.role == 'teacher' %}
+            <span class="role-badge teacher">Преподаватель</span>
+        {% else %}
+            <span class="role-badge student">Студент</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if u.approved %}
+            <span class="status active">Активен</span>
+        {% else %}
+            <span class="status pending">Ожидает</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="actions">
+            {% if not u.approved %}
+                <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="action-btn approve-btn">Подтвердить</button>
+                </form>
+            {% endif %}
+            
+            <button class="action-btn edit-user" 
+                    data-user-id="{{ u.id }}"
+                    data-fullname="{{ u.fullname }}"
+                    data-email="{{ u.email }}"
+                    data-group="{{ u.group_id or '' }}"
+                    data-role="{{ u.role }}"
+                    data-approved="{{ 'true' if u.approved else 'false' }}">
+                Редактировать
+            </button>
+            
+            {% if u.id != current_user.id and u.role != 'admin' %}
+            <button class="action-btn delete-user" 
+                    data-user-id="{{ u.id }}"
+                    data-username="{{ u.fullname }}">
+                Удалить
+            </button>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Нет пользователей</td></tr>
+{% endif %}

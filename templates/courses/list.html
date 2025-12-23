@@ -52,23 +52,11 @@
                     {% endif %}
                 </div>
                 
-                <div style="position: absolute; top: 15px; left: 15px;">
-                    <span style="background: linear-gradient(135deg, #12A0F4, #0A5D8E); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
-                        {% if 'python' in course_data.course.title.lower() %}
-                            ПРОГРАММИРОВАНИЕ
-                        {% elif 'javascript' in course_data.course.title.lower() or 'js' in course_data.course.title.lower() %}
-                            ПРОГРАММИРОВАНИЕ
-                        {% elif 'html' in course_data.course.title.lower() or 'css' in course_data.course.title.lower() %}
-                            ВЕБ-РАЗРАБОТКА
-                        {% elif 'данн' in course_data.course.title.lower() or 'анализ' in course_data.course.title.lower() %}
-                            АНАЛИЗ ДАННЫХ
-                        {% elif 'дизайн' in course_data.course.title.lower() %}
-                            ДИЗАЙН
-                        {% else %}
-                            ОБУЧЕНИЕ
-                        {% endif %}
-                    </span>
-                </div>
+<div style="position: absolute; top: 15px; left: 15px;">
+    <span style="background: linear-gradient(135deg, #12A0F4, #0A5D8E); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
+        {{ course_data.course.category or 'ОБУЧЕНИЕ' }}
+    </span>
+</div>
             </div>
             
             <div style="padding: 25px;">

@@ -2,7 +2,7 @@
 """
 Маршруты админ-панели: управление пользователями, группами, общая статистика
 """
-from flask import Blueprint, request, render_template, redirect, url_for, flash, session
+from flask import Blueprint, request, render_template, redirect, url_for, flash, session, jsonify
 from models import db, User, Group, Course, Lesson, Test, TestResult, UserProgress
 from decorators import admin_required
 import logging
@@ -25,11 +25,28 @@ def dashboard():
         # Получаем текущего админа
         admin_user = db.session.get(User, session['user_id'])
 
-        # Все пользователи
-        all_users = User.query.order_by(User.created_at.desc()).all()
+        # Поиск по пользователям (имя/логин/почта)
+        user_search = request.args.get('search', '').strip()
+
+        user_query = User.query
+        if user_search:
+            user_query = user_query.filter(
+                (User.username.ilike(f'%{user_search}%')) |
+                (User.fullname.ilike(f'%{user_search}%')) |
+                (User.email.ilike(f'%{user_search}%'))
+            )
+
+        all_users = user_query.order_by(User.created_at.desc()).all()
 
         # Пользователи, ожидающие подтверждения
-        pending_users = User.query.filter_by(approved=False).order_by(User.created_at.desc()).all()
+        pending_query = User.query.filter_by(approved=False)
+        if user_search:
+            pending_query = pending_query.filter(
+                (User.username.ilike(f'%{user_search}%')) |
+                (User.fullname.ilike(f'%{user_search}%')) |
+                (User.email.ilike(f'%{user_search}%'))
+            )
+        pending_users = pending_query.order_by(User.created_at.desc()).all()
 
         # Все группы (с поиском если есть)
         group_search = request.args.get('group_search', '').strip()
@@ -60,22 +77,64 @@ def dashboard():
         # Получаем курсы для отображения (с поиском если есть)
         course_search = request.args.get('course_search', '').strip()
         courses_query = Course.query
-        
+            
         if course_search:
             courses_query = courses_query.filter(
                 (Course.title.ilike(f'%{course_search}%')) |
                 (Course.description.ilike(f'%{course_search}%'))
             )
-        
-        recent_courses = courses_query.order_by(Course.created_at.desc()).limit(20).all()
+            
+        recent_courses = courses_query.order_by(Course.created_at.desc())
+        if not course_search:
+            recent_courses = recent_courses.limit(20)
+        recent_courses = recent_courses.all()
 
+        # AJAX: отдаем только HTML-фрагменты таблиц для live-поиска
+        if request.args.get('ajax') == '1':
+            users_html = render_template(
+                'admin/partials/users_table.html',
+                users=all_users,
+                current_user=admin_user
+            )
+            pending_html = render_template(
+                'admin/partials/pending_table.html',
+                pending_users=pending_users
+            )
+            courses_html = render_template(
+                'admin/partials/courses_table.html',
+                recent_courses=recent_courses
+            )
+            groups_html = render_template(
+                'admin/partials/groups_table.html',
+                groups=all_groups
+            )
+            return jsonify({
+                'success': True,
+                'users_html': users_html,
+                'pending_html': pending_html,
+                'courses_html': courses_html,
+                'groups_html': groups_html,
+                'counts': {
+                    'users': len(all_users),
+                    'pending': len(pending_users),
+                    'courses': len(recent_courses),
+                    'groups': len(all_groups),
+                }
+            })
+
+        # Аналитика тестов
+        from utils import get_test_analytics
+        test_analytics = get_test_analytics()
+        
         return render_template('admin/dashboard.html',
                                user=admin_user,
                                users=all_users,
                                pending_users=pending_users,
                                groups=all_groups,
+                               user_search=user_search,
                                stats=stats,
-                               recent_courses=recent_courses)
+                               recent_courses=recent_courses,
+                               test_analytics=test_analytics)
 
     except Exception as e:
         logger.error(f"[ADMIN] ❌ Ошибка загрузки панели: {e}")

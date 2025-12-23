@@ -5,7 +5,7 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session
 from models import db, User, Course, Lesson, UserProgress, Favorite, TestResult, Test
 from decorators import login_required
-from utils import save_file, delete_file, get_course_progress, render_mini_content, is_course_favorite, get_user_statistics, save_data_url
+from utils import save_file, delete_file, get_course_progress, render_mini_content, is_course_favorite, get_user_statistics, save_data_url, save_avatar
 import logging
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ def progress():
 
         courses_progress = []
         for row in progress_data:
-            from utils import get_course_progress
+            from utils import get_lesson_progress_map
             progress = get_course_progress(user.id, row.id)
 
             course_item = {
@@ -607,7 +607,7 @@ def edit_profile():
             if avatar_data_url:
                 if user.avatar_filename:
                     delete_file(user.avatar_filename)
-                saved = save_data_url(avatar_data_url, prefix='avatar', target_size=(400, 400))
+                saved = save_avatar(avatar_data_url, size=200)
                 if saved:
                     user.avatar_filename = saved
                 else:
@@ -619,7 +619,7 @@ def edit_profile():
                 if ext in {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff'}:
                     if user.avatar_filename:
                         delete_file(user.avatar_filename)
-                    saved = save_file(avatar_file, prefix='avatar', target_size=(400, 400))
+                    saved = save_avatar(avatar_file, size=200)
                     if saved:
                         user.avatar_filename = saved
                     else:

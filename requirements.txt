@@ -8,3 +8,5 @@ pymysql==1.1.1
 gunicorn
 python-dotenv
 redis
+bleach==5.0.1
+markdown==3.5.1

@@ -2,6 +2,76 @@
 
 {% block title %}Добавить урок - СКР Digital{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+<style>
+    .color-button {
+        color: #12A0F4 !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+        width: 30px !important;
+        height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 4px !important;
+        transition: all 0.2s !important;
+    }
+    
+    .color-button:hover {
+        background: #f0f0f0 !important;
+        color: #0A5D8E !important;
+    }
+
+    /* Фикс смещения и невидимых символов в редакторе */
+    .EasyMDEContainer {
+        max-width: 100%;
+    }
+
+    .editor-toolbar {
+        position: sticky;
+        top: 60px;
+        background: #ffffff;
+        border: 1px solid #d9d9d9;
+        border-radius: 10px 10px 0 0;
+        z-index: 5;
+    }
+
+    .editor-toolbar a,
+    .editor-toolbar button {
+        color: #0A5D8E !important;
+    }
+
+    .CodeMirror {
+        min-height: 320px;
+        font-size: 15px;
+        line-height: 1.6;
+        background: #ffffff;
+        color: #081844;
+        border: 1px solid #d9d9d9;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .CodeMirror-scroll {
+        min-height: 280px;
+    }
+
+    .editor-statusbar {
+        border: 1px solid #d9d9d9;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        background: #fafafa;
+    }
+
+    .editor-preview,
+    .editor-preview-side {
+        background: #ffffff;
+        color: #081844;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container" style="max-width: 800px; margin: 60px auto; padding: 40px 20px;">
     <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
@@ -22,6 +92,7 @@
                        name="title" 
                        required 
                        minlength="3"
+                       value="{{ form_data.get('title', '') if form_data else '' }}"
                        placeholder="Например: Введение в Python"
                        style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
             </div>
@@ -33,26 +104,34 @@
                        name="order" 
                        required 
                        min="1"
-                       value="{{ next_order }}"
+                       value="{{ form_data.get('order', next_order) if form_data else next_order }}"
                        style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
                 <small style="color: #666; margin-top: 5px; display: block;">Определяет порядок урока в курсе</small>
             </div>
             
             <div class="form-group" style="margin-bottom: 25px;">
+                <label for="open_at" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                    Дата и время открытия урока
+                    <small style="color: #666; font-weight: normal;">(по МСК, оставьте пустым — доступен сразу)</small>
+                </label>
+                <input type="datetime-local" 
+                       id="open_at" 
+                       name="open_at" 
+                       value="{{ form_data.get('open_at', '') if form_data else '' }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">
+                    Студенты увидят урок только после указанного времени. Удобно для курсов по расписанию.
+                </small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px;">
                 <label for="content" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Содержание урока</label>
-                <div class="mini-toolbar" style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                    <button type="button" class="mini-btn" data-wrap="**" title="Жирный">B</button>
-                    <button type="button" class="mini-btn" data-wrap="*" title="Курсив">I</button>
-                    <button type="button" class="mini-btn" data-wrap="__" title="Подчеркнуть">U</button>
-                    <button type="button" class="mini-btn" data-list="-" title="Список">• Список</button>
-                    <button type="button" class="mini-btn" data-link="true" title="Ссылка">🔗</button>
-                </div>
                 <textarea id="content" 
                           name="content" 
                           rows="10"
                           placeholder="Опишите содержание урока, добавьте теорию, примеры..."
-                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
-                <small style="color: #666; margin-top: 6px; display: block;">Мини-редактор: выделите текст и нажмите кнопку, поддерживается **жирный**, *курсив*, __подчеркнутый__, списки и ссылки.</small>
+                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ form_data.get('content', '') if form_data else '' }}</textarea>
+                <small style="color: #666; margin-top: 6px; display: block;">Используйте редактор для форматирования: заголовки, списки, ссылки, цитаты, код.</small>
             </div>
             
             <div class="form-group" style="margin-bottom: 25px;">
@@ -68,6 +147,7 @@
                     <input type="url"
                            id="video_link"
                            name="video_link"
+                           value="{{ form_data.get('video_link', '') if form_data else '' }}"
                            placeholder="https://youtu.be/..."
                            style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
                 </div>
@@ -86,6 +166,7 @@
                     <input type="url"
                            id="file_link"
                            name="file_link"
+                           value="{{ form_data.get('file_link', '') if form_data else '' }}"
                            placeholder="https://..."
                            style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
                 </div>
@@ -104,74 +185,153 @@
         </form>
     </div>
 </div>
-
-<style>
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #12A0F4;
-}
-
-
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-.wrapper {
-    min-height: 100vh;
-}
-
-.container {
-    flex: 1;
-}
-
-.mini-btn {
-    padding: 6px 10px;
-    border: 1px solid #ddd;
-    background: #f8f8f8;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    color: #444;
-}
-
-.mini-btn:hover {
-    background: #eef7ff;
-    border-color: #12A0F4;
-    color: #0A5D8E;
-}
-</style>
+{% endblock %}
+{% block extra_js %}
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
 <script>
-const contentField = document.getElementById('content');
-document.querySelectorAll('.mini-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (!contentField) return;
-        const start = contentField.selectionStart;
-        const end = contentField.selectionEnd;
-        const selected = contentField.value.substring(start, end);
-
-        if (btn.dataset.link) {
-            const url = prompt('Введите ссылку');
-            if (!url) return;
-            const wrapped = `[${selected || 'текст ссылки'}](${url})`;
-            contentField.setRangeText(wrapped, start, end, 'end');
-            return;
+document.addEventListener('DOMContentLoaded', () => {
+    const textarea = document.getElementById('content');
+    if (!textarea) return;
+    
+    // Массив цветов для быстрого выбора
+    const colorPalette = [
+        { name: 'красный', code: '#FF0000' },
+        { name: 'синий', code: '#0000FF' },
+        { name: 'зеленый', code: '#008000' },
+        { name: 'оранжевый', code: '#FFA500' },
+        { name: 'фиолетовый', code: '#800080' },
+        { name: 'черный', code: '#000000' },
+        { name: 'серый', code: '#666666' },
+    ];
+    
+    // Функция для вставки цветного текста
+    function insertColoredText(colorCode) {
+        const editor = easyMDE.codemirror;
+        const selection = editor.getSelection();
+        
+        if (selection) {
+            editor.replaceSelection(`<span style="color: ${colorCode}">${selection}</span>`);
+        } else {
+            editor.replaceSelection(`<span style="color: ${colorCode}">цветной текст</span>`);
         }
-
-        if (btn.dataset.list) {
-            const prefix = `${btn.dataset.list} `;
-            const lines = selected ? selected.split('\n') : [''];
-            const processed = lines.map(line => line ? `${prefix}${line}` : prefix).join('\n');
-            contentField.setRangeText(processed, start, end, 'end');
-            return;
+    }
+    
+    // Создаем кнопку палитры с буквой C
+    const colorButton = {
+        name: 'color-palette',
+        action: function(editor) {
+            const palette = document.createElement('div');
+            palette.style.cssText = `
+                position: absolute;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                z-index: 1000;
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            colorPalette.forEach(color => {
+                const colorBtn = document.createElement('button');
+                colorBtn.style.cssText = `
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    background: ${color.code};
+                    border: 2px solid ${color.code === '#000000' ? '#ccc' : 'transparent'};
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                `;
+                colorBtn.title = color.name;
+                
+                colorBtn.addEventListener('mouseenter', () => {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.borderColor = '#333';
+                });
+                
+                colorBtn.addEventListener('mouseleave', () => {
+                    colorBtn.style.transform = 'scale(1)';
+                    colorBtn.style.borderColor = color.code === '#000000' ? '#ccc' : 'transparent';
+                });
+                
+                colorBtn.addEventListener('click', () => {
+                    insertColoredText(color.code);
+                    document.body.removeChild(palette);
+                });
+                
+                palette.appendChild(colorBtn);
+            });
+            
+            document.body.appendChild(palette);
+            
+            const toolbar = document.querySelector('.editor-toolbar');
+            const colorBtnElement = toolbar.querySelector('.color-button');
+            const rect = colorBtnElement.getBoundingClientRect();
+            
+            palette.style.top = (rect.bottom + window.scrollY) + 'px';
+            palette.style.left = (rect.left + window.scrollX - 80) + 'px';
+            
+            setTimeout(() => {
+                document.addEventListener('click', function closePalette(e) {
+                    if (!palette.contains(e.target) && !colorBtnElement.contains(e.target)) {
+                        document.body.removeChild(palette);
+                        document.removeEventListener('click', closePalette);
+                    }
+                });
+            }, 0);
+        },
+        className: 'color-button',
+        title: 'Цвет текста (C)'
+    };
+    
+    // Инициализация EasyMDE
+    const easyMDE = new EasyMDE({
+        element: textarea,
+        spellChecker: false,
+        status: false,
+        placeholder: 'Напишите содержание урока...',
+        renderingConfig: {
+            singleLineBreaks: false,
+            codeSyntaxHighlighting: false
+        },
+        sanitizerFunction: function(html) {
+            return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                       .replace(/on\w+="[^"]*"/g, '');
+        },
+        toolbar: [
+            'undo', 'redo', '|',
+            'heading', 'bold', 'italic', 'strikethrough', '|',
+            colorButton,
+            '|',
+            'quote', 'code', 'unordered-list', 'ordered-list', 'table', '|',
+            'link', 'image', '|',
+            'preview', '|',
+            'guide'
+        ],
+        autoDownloadFontAwesome: true,
+    });
+    
+    // Устанавливаем текст "C" для кнопки цвета
+    setTimeout(() => {
+        const colorBtn = document.querySelector('.color-button');
+        if (colorBtn) {
+            colorBtn.innerHTML = 'C';
         }
-
-        if (btn.dataset.wrap) {
-            const wrap = btn.dataset.wrap;
-            const wrapped = `${wrap}${selected || 'текст'}${wrap}`;
-            contentField.setRangeText(wrapped, start, end, 'end');
+    }, 100);
+    
+    // Дополнительно: кастомная обработка предпросмотра
+    easyMDE.codemirror.on('change', function() {
+        const preview = document.querySelector('.editor-preview');
+        if (preview) {
+            setTimeout(() => {
+                const previewContent = document.querySelector('.editor-preview-content');
+                if (previewContent) {
+                    previewContent.innerHTML = easyMDE.options.previewRender(easyMDE.value());
+                }
+            }, 10);
         }
     });
 });

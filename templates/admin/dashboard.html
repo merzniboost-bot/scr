@@ -46,6 +46,9 @@
                     <span>Тестов</span>
                     <span class="count">{{ stats.total_tests }}</span>
                 </div>
+                <div class="nav-item" data-content="analytics">
+                    <span>📊 Аналитика тестов</span>
+                </div>
             </div>
         </div>
     </div>
@@ -71,8 +74,8 @@
             <div class="users-table">
                 <div class="table-header">
                     <h2>Все пользователи (<span id="users-table-count">{{ users|length }}</span>)</h2>
-                    <form action="{{ url_for('admin.dashboard') }}" method="get">
-                        <input name="search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('search', '') }}">
+                    <form action="{{ url_for('admin.dashboard') }}" method="get" class="admin-search-form" data-scope="users">
+                        <input name="search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('search', '') }}" autocomplete="off">
                         <button type="submit">Поиск</button>
                     </form>
                 </div>
@@ -88,82 +91,7 @@
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
-                        {% for u in users %}
-                        <tr class="user-row" data-user-id="{{ u.id }}">
-                            <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">
-                                        {% if u.id == user.id %}
-                                            {% if user.avatar_filename %}
-                                                <img style="border-radius: 50%;" src="{{ url_for('lessons.serve_file', filename=user.avatar_filename) }}">
-                                            {% else %}
-                                                <div class="avatar-placeholder">
-                                                    {{ user.fullname[:2]|upper }}
-                                                </div>
-                                            {% endif %}
-                                        {% else %}
-                                            {% if u.avatar_filename %}
-                                                <img src="{{ url_for('lessons.serve_file', filename=u.avatar_filename) }}">
-                                            {% else %}
-                                                <div class="avatar-placeholder">
-                                                    {{ u.fullname[:2]|upper }}
-                                                </div>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ u.fullname }}</div>
-                                        <div class="user-email">{{ u.email }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ u.group_rel.name if u.group_rel else '—' }}</td>
-                            <td>
-                                {% if u.role == 'admin' %}
-                                    <span class="role-badge admin">Администратор</span>
-                                {% elif u.role == 'teacher' %}
-                                    <span class="role-badge teacher">Преподаватель</span>
-                                {% else %}
-                                    <span class="role-badge student">Студент</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if u.approved %}
-                                    <span class="status active">Активен</span>
-                                {% else %}
-                                    <span class="status pending">Ожидает</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="actions">
-                                    {% if not u.approved %}
-                                        <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                            <button type="submit" class="action-btn approve-btn">Подтвердить</button>
-                                        </form>
-                                    {% endif %}
-                                    
-                                    <button class="action-btn edit-user" 
-                                            data-user-id="{{ u.id }}"
-                                            data-fullname="{{ u.fullname }}"
-                                            data-email="{{ u.email }}"
-                                            data-group="{{ u.group_id or '' }}"
-                                            data-role="{{ u.role }}"
-                                            data-approved="{{ 'true' if u.approved else 'false' }}">
-                                        Редактировать
-                                    </button>
-                                    
-                                    {% if u.id != current_user.id and u.role != 'admin' %}
-                                    <button class="action-btn delete-user" 
-                                            data-user-id="{{ u.id }}"
-                                            data-username="{{ u.fullname }}">
-                                        Удалить
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                        {% include 'admin/partials/users_table.html' with context %}
                     </tbody>
                 </table>
             </div>
@@ -178,7 +106,7 @@
             
             <div class="users-table">
                 <div class="table-header">
-                    <h2>Ожидают подтверждения ({{ pending_users|length }})</h2>
+                    <h2>Ожидают подтверждения (<span id="pending-table-count">{{ pending_users|length }}</span>)</h2>
                 </div>
                 
                 {% if pending_users %}
@@ -192,40 +120,8 @@
                             <th>ДЕЙСТВИЯ</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for u in pending_users %}
-                        <tr class="user-row" data-user-id="{{ u.id }}">
-                            <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">{{ u.fullname[:2]|upper }}</div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ u.fullname }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ u.email }}</td>
-                            <td>
-                                <span class="role-badge {{ u.role }}">
-                                    {{ 'Преподаватель' if u.role == 'teacher' else 'Студент' }}
-                                </span>
-                            </td>
-                            <td>{{ u.created_at|datetime }}</td>
-                            <td>
-                                <div class="actions">
-                                    <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" class="action-btn approve-btn">✓ Подтвердить</button>
-                                    </form>
-                                    
-                                    <button class="action-btn delete-user" 
-                                            data-user-id="{{ u.id }}"
-                                            data-username="{{ u.fullname }}">
-                                        ✗ Отклонить
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="pending-table-body">
+                        {% include 'admin/partials/pending_table.html' with context %}
                     </tbody>
                 </table>
                 {% else %}
@@ -250,8 +146,8 @@
             <div class="users-table">
                 <div class="table-header">
                     <h2>Все курсы (<span id="courses-table-count">{{ recent_courses|length }}</span>)</h2>
-                    <form action="{{ url_for('admin.dashboard') }}" method="get">
-                        <input name="course_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('course_search', '') }}">
+                    <form action="{{ url_for('admin.dashboard') }}" method="get" class="admin-search-form" data-scope="courses">
+                        <input name="course_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('course_search', '') }}" autocomplete="off">
                         <button type="submit">Поиск</button>
                     </form>
                 </div>
@@ -266,31 +162,8 @@
                             <th>ДЕЙСТВИЯ</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for course in recent_courses %}
-                        <tr>
-                            <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">
-                                        {{ course.title[:2]|upper }}
-                                    </div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ course.title }}</div>
-                                        <div class="user-email">{{ course.description[:50] + '...' if course.description and course.description|length > 50 else course.description or 'Без описания' }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ course.creator.fullname if course.creator else '—' }}</td>
-                            <td>{{ course.lessons|length }}</td>
-                            <td>{{ course.created_at.strftime('%d.%m.%Y') if course.created_at else '—' }}</td>
-                            <td>
-                                <div class="actions">
-                                    <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="action-btn">Открыть</a>
-                                    <a href="{{ url_for('courses.edit', course_id=course.id) }}" class="action-btn">Редактировать</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="courses-table-body">
+                        {% include 'admin/partials/courses_table.html' with context %}
                     </tbody>
                 </table>
             </div>
@@ -311,8 +184,8 @@
                 <div class="table-header">
                     <h2>Все группы (<span id="groups-table-count">{{ groups|length }}</span>)</h2>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <form action="{{ url_for('admin.dashboard') }}" method="get" style="display: flex; gap: 10px; align-items: center;">
-                            <input name="group_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('group_search', '') }}">
+                        <form action="{{ url_for('admin.dashboard') }}" method="get" style="display: flex; gap: 10px; align-items: center;" class="admin-search-form" data-scope="groups">
+                            <input name="group_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('group_search', '') }}" autocomplete="off">
                             <button type="submit">Поиск</button>
                         </form>
                         <button class="action-btn create-btn" id="add-group-btn">
@@ -330,36 +203,92 @@
                             <th>ДЕЙСТВИЯ</th>
                         </tr>
                     </thead>
+                    <tbody id="groups-table-body">
+                        {% include 'admin/partials/groups_table.html' with context %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент аналитики тестов -->
+        <div class="content-section" id="analytics-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>📊 Аналитика тестов</h1>
+                        <p>Статистика сложности тестов и успеваемости студентов</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Сложные тесты (где студенты чаще ошибаются)</h2>
+                </div>
+                
+                {% if test_analytics %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ТЕСТ</th>
+                            <th>КУРС</th>
+                            <th>ПОПЫТОК</th>
+                            <th>СРЕДНИЙ %</th>
+                            <th>НЕ СДАЛИ</th>
+                            <th>% НЕУДАЧ</th>
+                            <th>СЛОЖНОСТЬ</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        {% for group in groups %}
+                        {% for item in test_analytics %}
                         <tr>
                             <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">
-                                        {{ group.name[:2]|upper }}
-                                    </div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ group.name }}</div>
-                                    </div>
-                                </div>
+                                <a href="{{ url_for('tests.manage', test_id=item.test_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">
+                                    {{ item.title }}
+                                </a>
                             </td>
-                            <td>{{ group.description or '—' }}</td>
-                            <td>{{ group.students|length if group.students else 0 }}</td>
                             <td>
-                                <div class="actions">
-                                    <a href="{{ url_for('admin.group_students', group_id=group.id) }}" class="action-btn">Студенты</a>
-                                    {% if group.students|length == 0 %}
-                                    <form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" class="action-btn" onclick="return confirm('Удалить группу?')">Удалить</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
+                                <a href="{{ url_for('courses.detail', course_id=item.course_id) }}" style="color: #666; text-decoration: none;">
+                                    Курс #{{ item.course_id }}
+                                </a>
+                            </td>
+                            <td>{{ item.attempts }}</td>
+                            <td>
+                                <span style="color: {% if item.avg_score >= 60 %}#4CAF50{% elif item.avg_score >= 40 %}#FF9800{% else %}#f44336{% endif %}; font-weight: 600;">
+                                    {{ item.avg_score }}%
+                                </span>
+                            </td>
+                            <td>{{ item.failed_count }}</td>
+                            <td>
+                                <span style="color: {% if item.failed_rate > 50 %}#f44336{% elif item.failed_rate > 30 %}#FF9800{% else %}#4CAF50{% endif %}; font-weight: 600;">
+                                    {{ item.failed_rate }}%
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.difficulty == 'high' %}
+                                    <span style="padding: 4px 12px; background: #ffebee; color: #c62828; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🔴 Высокая
+                                    </span>
+                                {% elif item.difficulty == 'medium' %}
+                                    <span style="padding: 4px 12px; background: #fff3e0; color: #e65100; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🟡 Средняя
+                                    </span>
+                                {% else %}
+                                    <span style="padding: 4px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🟢 Низкая
+                                    </span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <div style="padding: 40px; text-align: center; color: #666;">
+                    <p>📭 Пока нет данных для аналитики</p>
+                    <p style="font-size: 14px;">Статистика появится после того, как студенты начнут проходить тесты</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

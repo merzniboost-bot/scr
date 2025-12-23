@@ -14,6 +14,20 @@
     --text-light: #3a3a3a;
     --border-light: #E2E8F0;
 }
+
+
+
+/* ебать */
+
+body .card {
+    background: var(--card-dark);
+}
+body.light-theme .card {
+    background: var(--card-light);
+}
+
+
+
 /* Новые стили для карточек курсов */
 .course-card {
     background: var(--card-dark);
@@ -25,6 +39,35 @@
     flex-direction: column;
     height: 100%;
     position: relative;
+}
+
+/* .light-theme .empty-state {
+    background: var(--card-light);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+}  */
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--card-dark);
+    border-radius: var(--radius);
+    border: 2px dashed var(--border-color);
+}
+
+body.light-theme .filters-section,
+body.light-theme .course-card,
+body.light-theme .empty-state,
+body.light-theme .overall-stats {
+    background: var(--card-light);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 body.light-theme .course-card {
@@ -399,6 +442,46 @@ body.light-theme .page-card {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
+/* =======================
+   Редактор EasyMDE (Markdown)
+   ======================= */
+.EasyMDEContainer .editor-toolbar {
+    background: #f7f9fc;
+    border: 1px solid #dce6f5;
+    border-radius: 10px 10px 0 0;
+    padding: 6px 8px;
+}
+
+.EasyMDEContainer .editor-toolbar button {
+    color: #0A5D8E;
+    border-radius: 6px;
+}
+
+.EasyMDEContainer .editor-toolbar button:hover {
+    background: #e6f0ff;
+    color: #0A5D8E;
+}
+
+.EasyMDEContainer .editor-toolbar button.active {
+    background: #d4e6ff;
+    color: #0A5D8E;
+}
+
+.EasyMDEContainer .editor-toolbar i.separator {
+    border-left: 1px solid #dce6f5;
+}
+
+.EasyMDEContainer .CodeMirror {
+    border: 1px solid #dce6f5;
+    border-radius: 0 0 10px 10px;
+    background: #ffffff;
+}
+
+.EasyMDEContainer .editor-preview {
+    border: 1px solid #dce6f5;
+    border-radius: 0 0 10px 10px;
+}
+
 .page-card h1 {
     font-size: 42px;
     margin-bottom: 20px;
@@ -496,14 +579,12 @@ body.light-theme .contact-btn {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 body.light-theme .contact-btn:hover {
     background: #e8e8e8;
     border-color: #d0d0d0;
     color: #333;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* ФИКСИРОВАННОЕ МЕНЮ */
@@ -517,7 +598,6 @@ header {
     background: rgba(8, 24, 68, 0.1);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     border-radius: 0;
     border-bottom: none;
@@ -749,7 +829,6 @@ body.light-theme .profile-avatar-header {
     border-radius: 15px;
     padding: 20px;
     min-width: 250px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -917,7 +996,7 @@ body.light-theme .courses-controls-wrapper {
 
 .search-box input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 12px 44px 12px 18px;
     border: 1px solid #ADADAD;
     border-radius: 10px;
     background: #5D5C5C;
@@ -941,6 +1020,31 @@ body.light-theme .search-box input {
     outline: none;
     box-shadow: 0 0 0 2px var(--accent-dark);
     border-color: var(--accent-dark);
+}
+
+.search-box .search-loading {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--accent-dark);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.light-theme .search-box .search-loading {
+    color: var(--accent-light);
+}
+
+.search-box .search-loading.is-visible {
+    opacity: 1;
 }
 
 body.light-theme .search-box input:focus {
@@ -1395,7 +1499,7 @@ body.light-theme .enroll-btn:hover {
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
+/* :root {
     --primary-dark: #081844;
     --secondary-dark: #007786;
     --accent-dark: #129EF0;
@@ -1408,13 +1512,13 @@ body.light-theme .enroll-btn:hover {
     --card-light: #ffffff;
     --text-light: #3a3a3a;
     --border-light: #E2E8F0;
-}
+} */
 
-* {
+/* * {
     margin: 0;
     padding: 0;
     /*box-sizing: border-box;*/
-}
+} */
 
 body {
     font-family: "Inter", sans-serif;
@@ -1435,7 +1539,6 @@ a {
     border-radius: 8px;
     font-weight: 500;
     font-size: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-decoration: none;
     color: #ffffff;
 }
@@ -1477,7 +1580,6 @@ header {
     background: rgba(8, 24, 68, 0.1);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     height: auto;
 }
@@ -1497,18 +1599,22 @@ body.light-theme header {
     
 }
 
+
+
 header .logo {
-    width: 100px;
-    height: 100px;
+    width: 90px;
+    height: 90px;
     flex-shrink: 0;
     border-bottom: none;
 }
 
 header .logo img {
     width: 100%;
-    height: 100%;
+    height: 90%;
     object-fit: contain;
     border-bottom: none;
+    position: relative;
+    top: -10px;
 }
 
 .rectangle-container {
@@ -1678,7 +1784,7 @@ body.light-theme .courses-controls-wrapper {
 
 .search-box input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 12px 44px 12px 18px;
     border: 1px solid #ADADAD;
     border-radius: 12px;
     background: #5D5C5C;
@@ -2436,6 +2542,12 @@ body.light-theme .start-learning-btn {
 
 body.light-theme .start-learning-btn:hover {
     box-shadow: 0 8px 25px rgba(18, 160, 244, 0.4);
+}
+
+.editor-toolbar{
+    display: flex;
+    position: relative !important;
+    top: 0 !important;
 }
 
 /* Адаптивность для секции "Мой процесс" */

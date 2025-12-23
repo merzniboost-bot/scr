@@ -2,8 +2,7 @@
 """
 Маршруты заданий: создание, просмотр, загрузка работ, проверка
 """
-from flask import Blueprint, request, render_template, redirect, url_for, flash, session, abort, send_from_directory, \
-    jsonify
+from flask import Blueprint, request, render_template, redirect, url_for, flash, session, send_from_directory, abort, Response
 from models import db, Assignment, Submission, Lesson, Course, User, Group, now_msk
 from decorators import login_required, course_owner_required
 from utils import save_file, delete_file
@@ -376,6 +375,66 @@ def delete_submission(submission_id):
     return redirect(url_for('courses.list'))
 
 
+# ==================== СКАЧИВАНИЕ / ПРОСМОТР РАБОТ ====================
+
+TEXT_EXTS = {'txt', 'md', 'py', 'js', 'ts', 'json', 'csv', 'html', 'css'}
+
+
+@assignments_bp.route('/submission/<int:submission_id>/download')
+@login_required
+def download_submission(submission_id):
+    """Скачать файл работы (для автора или владельца курса/админа)."""
+    submission = db.session.get(Submission, submission_id)
+    if not submission:
+        flash('Работа не найдена', 'error')
+        return redirect(url_for('courses.list'))
+
+    user = db.session.get(User, session['user_id'])
+    course = submission.assignment.lesson.course
+
+    if not (user.role == 'admin' or course.creator_id == user.id or submission.student_id == user.id):
+        flash('Нет прав для скачивания', 'error')
+        return redirect(url_for('courses.list'))
+
+    filepath = UPLOAD_DIR / submission.file_filename
+    if not filepath.exists():
+        flash('Файл не найден', 'error')
+        return redirect(url_for('courses.list'))
+
+    return send_from_directory(directory=UPLOAD_DIR, path=submission.file_filename, as_attachment=True,
+                               download_name=submission.original_filename or submission.file_filename)
+
+
+@assignments_bp.route('/submission/<int:submission_id>/preview')
+@login_required
+def preview_submission(submission_id):
+    """Предпросмотр текстовых работ в браузере (чтение файла)."""
+    submission = db.session.get(Submission, submission_id)
+    if not submission:
+        abort(404)
+
+    user = db.session.get(User, session['user_id'])
+    course = submission.assignment.lesson.course
+    if not (user.role == 'admin' or course.creator_id == user.id or submission.student_id == user.id):
+        abort(403)
+
+    filepath = UPLOAD_DIR / submission.file_filename
+    if not filepath.exists():
+        abort(404)
+
+    ext = submission.file_filename.rsplit('.', 1)[-1].lower() if '.' in submission.file_filename else ''
+    if ext not in TEXT_EXTS:
+        # Для нетекстовых — предложим скачать
+        return send_from_directory(directory=UPLOAD_DIR, path=submission.file_filename, as_attachment=True,
+                                   download_name=submission.original_filename or submission.file_filename)
+
+    try:
+        content = filepath.read_text(encoding='utf-8', errors='ignore')
+        return Response(content, mimetype='text/plain; charset=utf-8')
+    except Exception:
+        abort(500)
+
+
 # ==================== ПРОСМОТР РАБОТ ПРЕПОДАВАТЕЛЕМ ====================
 
 @assignments_bp.route('/<int:assignment_id>/submissions')
@@ -446,53 +505,6 @@ def view_submissions(assignment_id):
                            selected_group_id=group_id,
                            status_filter=status_filter,
                            stats=stats)
-
-
-@assignments_bp.route('/submission/<int:submission_id>/download')
-@login_required
-def download_submission(submission_id):
-    """Скачивание файла работы"""
-    try:
-        submission = db.session.get(Submission, submission_id)
-
-        if not submission:
-            flash('Работа не найдена', 'error')
-            return redirect(url_for('courses.list'))
-
-        user = db.session.get(User, session['user_id'])
-        course = submission.assignment.lesson.course
-
-        # Проверка прав (автор работы, владелец курса или админ)
-        can_download = (
-                submission.student_id == user.id or
-                course.creator_id == user.id or
-                user.role == 'admin'
-        )
-
-        if not can_download:
-            flash('У вас нет прав для скачивания этого файла', 'error')
-            return redirect(url_for('courses.list'))
-
-        file_path = UPLOAD_DIR / submission.file_filename
-
-        if not file_path.exists():
-            flash('Файл не найден на сервере', 'error')
-            return redirect(url_for('assignments.view_submissions', assignment_id=submission.assignment_id))
-
-        logger.info(f"[DOWNLOAD] 📥 Работа скачана: {submission.original_filename} пользователем {user.id}")
-
-        # Возвращаем с оригинальным именем файла
-        return send_from_directory(
-            UPLOAD_DIR,
-            submission.file_filename,
-            as_attachment=True,
-            download_name=submission.original_filename
-        )
-
-    except Exception as e:
-        logger.error(f"[SUBMISSIONS] ❌ Ошибка скачивания: {e}")
-        flash('Ошибка при скачивании файла', 'error')
-        return redirect(url_for('courses.list'))
 
 
 @assignments_bp.route('/submission/<int:submission_id>/review', methods=['POST'])

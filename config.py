@@ -70,9 +70,45 @@ class ProductionConfig(Config):
     DEBUG = False
 
 
+class TestingConfig:
+    """Конфигурация для тестирования"""
+    TESTING = True
+    DEBUG = True
+    
+    SECRET_KEY = 'test-secret-key-for-testing-only'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    PERMANENT_SESSION_LIFETIME = 86400
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    WTF_CSRF_ENABLED = False
+    WTF_CSRF_TIME_LIMIT = None
+    WTF_CSRF_CHECK_DEFAULT = False
+    
+    UPLOAD_DIR = str(UPLOAD_DIR)
+    MAX_CONTENT_LENGTH = 500 * 1024 * 1024
+    
+    ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
+    ALLOWED_FILE_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'zip', 'rar', 'ppt', 'pptx', 'jpg', 'jpeg', 'png'}
+    
+    ROLES = {
+        'ADMIN': 'admin',
+        'TEACHER': 'teacher',
+        'STUDENT': 'student'
+    }
+    
+    LOG_LEVEL = 'DEBUG'
+    LOG_FORMAT = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+    LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+
 # Выбор конфигурации
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': ProductionConfig
 }

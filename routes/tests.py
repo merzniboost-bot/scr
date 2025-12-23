@@ -8,6 +8,7 @@ from decorators import login_required, course_owner_required, test_owner_require
 from utils import calculate_test_score
 from datetime import datetime, timezone
 import logging
+from zoneinfo import ZoneInfo 
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +52,31 @@ def create(course_id):
                     max_attempts = 0
             except ValueError:
                 max_attempts = 0
+            
+                        # === НОВОЕ: дата открытия теста ===
+            open_at_str = request.form.get('open_at')
+            open_at = None
+            if open_at_str:
+                try:
+                    open_at = datetime.strptime(open_at_str, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    flash('Неверный формат даты и времени открытия теста', 'warning')
+            # ==================================
 
             # Создание теста
             test = Test(
                 course_id=course_id,
                 title=title,
-                max_attempts=max_attempts
+                max_attempts=max_attempts,
+                open_at=open_at  # ← новая строка
             )
 
             db.session.add(test)
             db.session.commit()
+            
+            # Инвалидируем кэш материалов курса
+            from utils import invalidate_course_cache
+            invalidate_course_cache(course_id)
 
             logger.info(f"[TESTS] ✅ Тест создан: {title} (ID={test.id}, course_id={course_id})")
             flash(f'Тест "{title}" успешно создан', 'success')
@@ -110,9 +126,24 @@ def edit(test_id):
             except ValueError:
                 max_attempts = 0
 
+                        # === НОВОЕ: дата открытия теста ===
+            open_at_str = request.form.get('open_at')
+            if open_at_str:
+                try:
+                    test.open_at = datetime.strptime(open_at_str, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    flash('Неверный формат даты и времени открытия теста', 'warning')
+            else:
+                test.open_at = None
+            # ==================================
+
             test.title = title
             test.max_attempts = max_attempts
             db.session.commit()
+            
+            # Инвалидируем кэш материалов курса
+            from utils import invalidate_course_cache
+            invalidate_course_cache(test.course_id)
 
             logger.info(f"[TESTS] ✏️ Тест отредактирован: {title} (ID={test_id})")
             flash(f'Тест "{title}" успешно обновлен', 'success')
@@ -146,6 +177,10 @@ def delete(test_id):
         # Удаляем тест (каскадное удаление вопросов и результатов)
         db.session.delete(test)
         db.session.commit()
+        
+        # Инвалидируем кэш материалов курса
+        from utils import invalidate_course_cache
+        invalidate_course_cache(course_id)
 
         logger.info(f"[TESTS] 🗑️ Тест удален: {title} (ID={test_id})")
         flash(f'Тест "{title}" успешно удален', 'success')
@@ -380,11 +415,20 @@ def take(test_id):
     Прохождение теста студентом
     """
     test = db.session.get(Test, test_id)
-
+    
     if not test:
         flash('Тест не найден', 'error')
         return redirect(url_for('courses.list'))
-
+    # === НОВОЕ: проверка даты открытия ===
+    
+    if test.open_at:
+        open_at_msk = test.open_at.replace(tzinfo=ZoneInfo('Europe/Moscow'))
+        open_at_utc = open_at_msk.astimezone(timezone.utc)
+        
+        if datetime.now(timezone.utc) < open_at_utc:
+            flash(f'Тест станет доступен {open_at_msk.strftime("%d.%m.%Y в %H:%M")} (МСК)', 'info')
+            return redirect(url_for('courses.detail', course_id=test.course_id))
+            # =====================================
     questions = db.session.query(Question).filter_by(test_id=test_id) \
         .order_by(Question.id).all()
 
@@ -393,6 +437,17 @@ def take(test_id):
         return redirect(url_for('courses.detail', course_id=test.course_id))
 
     user = db.session.get(User, session['user_id'])
+    
+    # Получаем все материалы курса для определения позиции теста
+    from utils import get_course_materials
+    all_materials = get_course_materials(test.course_id)
+    
+    # Находим позицию текущего теста
+    current_position = 0
+    for i, mat in enumerate(all_materials):
+        if mat['type'] == 'test' and mat['id'] == test_id:
+            current_position = i + 1
+            break
     
     # Проверка количества попыток
     if test.max_attempts > 0:
@@ -452,7 +507,9 @@ def take(test_id):
     return render_template('tests/take.html', 
                          test=test, 
                          questions=questions,
-                         remaining_attempts=remaining_attempts)
+                         remaining_attempts=remaining_attempts,
+                         current_position=current_position,
+                         total_materials=len(all_materials))
 
 
 @tests_bp.route('/results/<int:result_id>')

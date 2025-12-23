@@ -306,17 +306,20 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const loadingIndicator = document.createElement('span');
         loadingIndicator.className = 'search-loading';
-        loadingIndicator.style.cssText = 'display: none; margin-left: 10px; color: #12A0F4; font-size: 18px;';
         loadingIndicator.textContent = '⏳';
         searchInput.parentElement.style.position = 'relative';
         searchInput.parentElement.appendChild(loadingIndicator);
+
+        const toggleLoading = (show) => {
+            loadingIndicator.classList.toggle('is-visible', show);
+        };
         
         function performSearch(searchTerm) {
             if (isSearching) return;
             isSearching = true;
             
             searchInput.classList.add('searching');
-            loadingIndicator.style.display = 'inline-block';
+            toggleLoading(true);
             
             const url = new URL(formAction, window.location.origin);
             url.searchParams.set('search', searchTerm);
@@ -349,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(() => {
                 isSearching = false;
                 searchInput.classList.remove('searching');
-                loadingIndicator.style.display = 'none';
+                toggleLoading(false);
             });
         }
         

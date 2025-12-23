@@ -312,73 +312,129 @@ def init_db(app):
     with app.app_context():
         logger.info("Инициализация базы данных...")
 
-        # 1. Создаём все таблицы из моделей
+        # КЛЮЧЕВАЯ СТРОКА: принудительно обновляем метаданные из реальной БД
+        db.metadata.reflect(bind=db.engine, views=False)  # Обновляем структуру
+        logger.info("Метаданные таблиц обновлены из базы данных")
+
+        # 1. Создаём все таблицы из моделей (если чего-то нет — создаст)
         db.create_all()
 
         # 2. Простые миграции "на лету"
         inspector = inspect(db.engine)
 
-        # Миграция: добавляем колонку max_attempts в таблицу tests
+        # Добавляем новые колонки из новой версии models.py
+        if 'courses' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('courses')}
+            if 'category_id' not in columns:
+                logger.info("Миграция: добавляем category_id в courses")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN category_id INT NULL AFTER preview_filename"))
+                    conn.execute(text("ALTER TABLE courses ADD INDEX idx_category_id (category_id)"))
+                    conn.commit()
+
+            if 'updated_at' not in columns:
+                logger.info("Миграция: добавляем updated_at в courses")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at"))
+                    conn.commit()
+
+        if 'lessons' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('lessons')}
+            if 'module_id' not in columns:
+                logger.info("Миграция: добавляем module_id в lessons")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE lessons ADD COLUMN module_id INT NULL AFTER course_id"))
+                    conn.execute(text("ALTER TABLE lessons ADD INDEX idx_module_id (module_id)"))
+                    conn.commit()
+            if 'open_at' not in columns:
+                logger.info("Миграция: добавляем open_at в lessons")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE lessons ADD COLUMN open_at DATETIME NULL"))
+                    conn.commit()
+
         if 'tests' in inspector.get_table_names():
             columns = {col['name'] for col in inspector.get_columns('tests')}
-            if 'max_attempts' not in columns:
-                logger.info("Миграция: добавляем колонку max_attempts в таблицу tests")
-                try:
-                    # Универсальный способ через SQLAlchemy Core
-                    from sqlalchemy import Column, Integer
-                    from sqlalchemy.sql import table, column
+            if 'module_id' not in columns:
+                logger.info("Миграция: добавляем module_id в tests")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE tests ADD COLUMN module_id INT NULL AFTER course_id"))
+                    conn.execute(text("ALTER TABLE tests ADD INDEX idx_module_id (module_id)"))
+                    conn.commit()
+            if 'open_at' not in columns:
+                logger.info("Миграция: добавляем open_at в tests")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE tests ADD COLUMN open_at DATETIME NULL AFTER max_attempts"))
+                    conn.commit()
+            if 'order' not in columns:
+                logger.info("Миграция: добавляем order в tests")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE tests ADD COLUMN `order` INT NOT NULL DEFAULT 1"))
+                    conn.commit()
+            if 'updated_at' not in columns:
+                logger.info("Миграция: добавляем updated_at в tests")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE tests ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+                    conn.commit()
 
-                    tests_table = table('tests',
-                        column('id', Integer),
-                        column('max_attempts', Integer)
-                    )
+        # Создаём таблицу categories, если её нет
+        if 'categories' not in inspector.get_table_names():
+            logger.info("Миграция: создаём таблицу categories")
+            with db.engine.connect() as conn:
+                conn.execute(text("""
+                    CREATE TABLE categories (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL UNIQUE,
+                        description VARCHAR(255) DEFAULT '',
+                        color VARCHAR(7) DEFAULT '#12A0F4',
+                        icon VARCHAR(50) DEFAULT '📚',
+                        is_active TINYINT(1) DEFAULT 1,
+                        created_by INT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_category_creator FOREIGN KEY (created_by) REFERENCES users(id)
+                    ) ENGINE=InnoDB
+                """))
+                conn.commit()
 
-                    with db.engine.connect() as conn:
-                        conn.execute(
-                            tests_table.update()
-                            .where(tests_table.c.max_attempts.is_(None))
-                            .values(max_attempts=0)
-                        )
-                        # Добавляем колонку (диалектозависимо, но SQLAlchemy сам подстроится)
-                        conn.execute(text(
-                            "ALTER TABLE tests ADD COLUMN max_attempts INTEGER DEFAULT 0 NOT NULL"
-                        ))
-                        conn.commit()
-                    logger.info("Колонка max_attempts успешно добавлена")
-                except Exception as e:
-                    logger.warning(f"Не удалось добавить колонку max_attempts (возможно, уже существует): {e}")
+        # Создаём таблицу modules, если её нет
+        if 'modules' not in inspector.get_table_names():
+            logger.info("Миграция: создаём таблицу modules")
+            with db.engine.connect() as conn:
+                conn.execute(text("""
+                    CREATE TABLE modules (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        course_id INT NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        `order` INT DEFAULT 0,
+                        is_visible TINYINT(1) DEFAULT 1,
+                        open_at DATETIME NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_module_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB
+                """))
+                conn.commit()
 
-        # Миграция: добавляем колонку avatar_filename в таблицу users
-        if 'users' in inspector.get_table_names():
-            user_columns = {col['name'] for col in inspector.get_columns('users')}
-            if 'avatar_filename' not in user_columns:
-                logger.info("Миграция: добавляем колонку avatar_filename в таблицу users")
-                try:
-                    with db.engine.connect() as conn:
-                        conn.execute(text(
-                            "ALTER TABLE users ADD COLUMN avatar_filename VARCHAR(512)"
-                        ))
-                        conn.commit()
-                    logger.info("Колонка avatar_filename успешно добавлена")
-                except Exception as e:
-                    logger.warning(f"Не удалось добавить колонку avatar_filename (возможно, уже существует): {e}")
-
-        # 3. Определяем, пуста ли база (универсально для всех СУБД)
+        # Создаём категорию по умолчанию
         try:
-            user_count = db.session.execute(text("SELECT COUNT(*) FROM users")).scalar_one()
-        except Exception:
-            user_count = 0
+            from models import Category
+            default_cat = db.session.execute(text("SELECT id FROM categories WHERE name = 'Общие'")).fetchone()
+            if not default_cat:
+                logger.info("Создаём категорию по умолчанию")
+                db.session.execute(text("""
+                    INSERT INTO categories (name, description, color, icon, created_by, is_active)
+                    VALUES ('Общие', 'Курсы без категории', '#12A0F4', '📚', 1, 1)
+                """))
+                db.session.commit()
+                default_cat_id = db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar_one()
+            else:
+                default_cat_id = default_cat[0]
 
-#        if user_count == 0:
-#            logger.info("База данных пуста → создаём демо-данные")
-#            init_demo_data()
-#        else:
-#            logger.info(f"В базе уже есть данные ({user_count} пользователей)")
-#            # Проверяем, есть ли хотя бы один админ
-#            admin = User.query.filter_by(role='admin').first()
-#            if not admin:
-#                logger.warning("Администратор не найден → создаём демо-данные заново")
-#                init_demo_data()
+            # Привязываем все курсы к категории по умолчанию
+            db.session.execute(text(f"UPDATE courses SET category_id = {default_cat_id} WHERE category_id IS NULL"))
+            db.session.commit()
+        except Exception as e:
+            logger.warning(f"Не удалось создать категорию по умолчанию: {e}")
 
         logger.info("Инициализация базы данных завершена")
 
