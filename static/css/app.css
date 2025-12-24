@@ -1536,7 +1536,6 @@ body.light-theme {
 a {
     transition: all 0.3s ease;
     cursor: pointer;
-    border-radius: 8px;
     font-weight: 500;
     font-size: 1rem;
     text-decoration: none;
