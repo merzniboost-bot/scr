@@ -19,7 +19,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                     <div style="flex: 1;">
                         <h1 style="font-size: 36px; font-weight: 700; color: #081844; margin-bottom: 15px; line-height: 1.2;">{{ course.title }}</h1>
-                        <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">{{ course.description or 'Описание отсутствует' }}</p>
+                        <div style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                            {{ course.description|safe if course.description else 'Описание отсутствует' }}
+                        </div>
                     </div>
                     
                     {% if current_user %}

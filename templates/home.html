@@ -143,8 +143,9 @@
 
             <h3 class="course-title">{{ course_data.course.title }}</h3>
 
+            {% set desc = (course_data.course.description|striptags)|trim %}
             <p class="course-description">
-                {{ course_data.course.description[:120] + '...' if course_data.course.description and course_data.course.description|length > 120 else course_data.course.description or 'Описание отсутствует' }}
+                {{ desc[:120] + '...' if desc and desc|length > 120 else desc or 'Описание отсутствует' }}
             </p>
 
             <div class="course-meta">

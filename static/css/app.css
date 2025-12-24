@@ -2656,3 +2656,214 @@ body.light-theme .theme-toggle-btn {
 .theme-toggle-btn.theme-switching {
     animation: themePulse 0.6s ease-out;
 }
+
+/* ============================================
+   ГЛОБАЛЬНЫЕ СТИЛИ ФОРМ И ИНПУТОВ ДЛЯ ТЕМ
+   ============================================ */
+
+/* Тёмная тема - формы */
+body:not(.light-theme) input[type="text"],
+body:not(.light-theme) input[type="email"],
+body:not(.light-theme) input[type="password"],
+body:not(.light-theme) input[type="number"],
+body:not(.light-theme) input[type="url"],
+body:not(.light-theme) input[type="datetime-local"],
+body:not(.light-theme) input[type="date"],
+body:not(.light-theme) input[type="time"],
+body:not(.light-theme) textarea,
+body:not(.light-theme) select {
+    background: #333333;
+    color: #f5f5f5;
+    border-color: #555555;
+}
+
+body:not(.light-theme) input::placeholder,
+body:not(.light-theme) textarea::placeholder {
+    color: #999999;
+}
+
+body:not(.light-theme) input:focus,
+body:not(.light-theme) textarea:focus,
+body:not(.light-theme) select:focus {
+    border-color: var(--accent-dark);
+    box-shadow: 0 0 0 2px rgba(18, 158, 240, 0.2);
+}
+
+/* Тёмная тема - Quill редактор */
+body:not(.light-theme) .ql-toolbar.ql-snow {
+    background: #2d2d2d;
+    border-color: #555555;
+}
+
+body:not(.light-theme) .ql-container.ql-snow {
+    background: #333333;
+    border-color: #555555;
+    color: #f5f5f5;
+}
+
+body:not(.light-theme) .ql-editor {
+    color: #f5f5f5;
+}
+
+body:not(.light-theme) .ql-editor.ql-blank::before {
+    color: #888888;
+}
+
+body:not(.light-theme) .ql-toolbar .ql-stroke {
+    stroke: #cccccc;
+}
+
+body:not(.light-theme) .ql-toolbar .ql-fill {
+    fill: #cccccc;
+}
+
+body:not(.light-theme) .ql-toolbar .ql-picker {
+    color: #cccccc;
+}
+
+body:not(.light-theme) .ql-toolbar button:hover .ql-stroke,
+body:not(.light-theme) .ql-toolbar .ql-picker-label:hover .ql-stroke {
+    stroke: var(--accent-dark);
+}
+
+body:not(.light-theme) .ql-toolbar button:hover .ql-fill,
+body:not(.light-theme) .ql-toolbar .ql-picker-label:hover .ql-fill {
+    fill: var(--accent-dark);
+}
+
+body:not(.light-theme) .ql-toolbar button.ql-active .ql-stroke {
+    stroke: var(--accent-dark);
+}
+
+body:not(.light-theme) .ql-toolbar button.ql-active .ql-fill {
+    fill: var(--accent-dark);
+}
+
+/* Тёмная тема - скроллбары */
+body:not(.light-theme) ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body:not(.light-theme) ::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+body:not(.light-theme) ::-webkit-scrollbar-thumb {
+    background: #555555;
+    border-radius: 4px;
+}
+
+body:not(.light-theme) ::-webkit-scrollbar-thumb:hover {
+    background: #666666;
+}
+
+/* Тёмная тема - карточки форм */
+body:not(.light-theme) .card,
+body:not(.light-theme) .page-card {
+    background: var(--card-dark);
+    color: var(--text-dark);
+}
+
+body:not(.light-theme) .card h1,
+body:not(.light-theme) .card h2,
+body:not(.light-theme) .card h3,
+body:not(.light-theme) .card label,
+body:not(.light-theme) .page-card h1,
+body:not(.light-theme) .page-card h2,
+body:not(.light-theme) .page-card h3,
+body:not(.light-theme) .page-card label {
+    color: var(--text-dark);
+}
+
+body:not(.light-theme) .card p,
+body:not(.light-theme) .card small,
+body:not(.light-theme) .page-card p,
+body:not(.light-theme) .page-card small {
+    color: #b0b0b0;
+}
+
+/* Тёмная тема - таблицы */
+body:not(.light-theme) table {
+    background: var(--card-dark);
+    color: var(--text-dark);
+}
+
+body:not(.light-theme) th,
+body:not(.light-theme) td {
+    border-color: #404040;
+}
+
+body:not(.light-theme) thead {
+    background: #2d2d2d;
+}
+
+body:not(.light-theme) tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Светлая тема - формы (явное определение) */
+body.light-theme input[type="text"],
+body.light-theme input[type="email"],
+body.light-theme input[type="password"],
+body.light-theme input[type="number"],
+body.light-theme input[type="url"],
+body.light-theme input[type="datetime-local"],
+body.light-theme input[type="date"],
+body.light-theme input[type="time"],
+body.light-theme textarea,
+body.light-theme select {
+    background: #ffffff;
+    color: #333333;
+    border-color: #e0e0e0;
+}
+
+body.light-theme input:focus,
+body.light-theme textarea:focus,
+body.light-theme select:focus {
+    border-color: var(--accent-light);
+    box-shadow: 0 0 0 2px rgba(18, 160, 244, 0.2);
+}
+
+/* === WYSIWYG контент - сохранение inline-стилей === */
+/* Убеждаемся, что inline-стили имеют приоритет над CSS */
+[style*="color"] { /* сохраняем цвет текста */ }
+[style*="background"] { /* сохраняем фон */ }
+[style*="text-decoration"] { /* сохраняем подчёркивание */ }
+
+/* Контейнеры для WYSIWYG-контента */
+.wysiwyg-content,
+.lesson-content,
+.course-description-full {
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+/* Не переопределяем цвета для элементов с inline-стилями */
+.wysiwyg-content *:not([style*="color"]),
+.lesson-content *:not([style*="color"]),
+.course-description-full *:not([style*="color"]) {
+    color: inherit;
+}
+
+/* Гарантируем отображение всех HTML-элементов */
+.wysiwyg-content p,
+.wysiwyg-content span,
+.wysiwyg-content strong,
+.wysiwyg-content em,
+.wysiwyg-content u,
+.wysiwyg-content s,
+.lesson-content p,
+.lesson-content span,
+.lesson-content strong,
+.lesson-content em,
+.lesson-content u,
+.lesson-content s {
+    display: inline;
+}
+
+.wysiwyg-content p,
+.lesson-content p {
+    display: block;
+    margin: 10px 0;
+}

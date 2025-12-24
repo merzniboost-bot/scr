@@ -85,10 +85,6 @@ try:
     from bleach.css_sanitizer import CSSSanitizer
 except Exception:
     CSSSanitizer = None
-try:
-    from bleach.sanitizer import Cleaner
-except Exception:
-    Cleaner = None
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +196,84 @@ def markdown_to_html(content, safe_mode=True):
     except Exception as e:
         logger.error(f"[UTILS] Ошибка конвертации Markdown: {e}")
         return content
+
+
+def sanitize_html_description(content: str | None) -> str:
+    """
+    Санитизация HTML для описаний курса (WYSIWYG, без Markdown).
+    Разрешаем базовые теги форматирования и inline-стили для цветов.
+    """
+    if not content:
+        return ""
+
+    allowed_tags = [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',
+        'ul', 'ol', 'li', 'code', 'pre', 'blockquote',
+        'h1', 'h2', 'h3', 'h4', 'div', 'span', 'a'
+    ]
+
+    allowed_attrs = {
+        '*': ['class', 'style'],
+        'a': ['href', 'target', 'rel'],
+        'code': ['class', 'style'],
+        'pre': ['class', 'style'],
+        'span': ['class', 'style'],
+        'div': ['class', 'style'],
+        'p': ['class', 'style'],
+        'strong': ['style'],
+        'b': ['style'],
+        'em': ['style'],
+        'i': ['style'],
+        'u': ['style'],
+        's': ['style'],
+        'h1': ['style'],
+        'h2': ['style'],
+        'h3': ['style'],
+        'h4': ['style'],
+    }
+
+    # Разрешаем CSS-свойства для WYSIWYG
+    allowed_styles = [
+        'color', 'background-color', 'background',
+        'font-size', 'font-weight', 'font-style', 'font-family',
+        'text-align', 'text-decoration', 'text-decoration-line',
+        'padding', 'margin', 'border', 'border-radius',
+        'display', 'width', 'height'
+    ]
+
+    css_sanitizer = CSSSanitizer(allowed_css_properties=allowed_styles) if CSSSanitizer else None
+
+    try:
+        if css_sanitizer:
+            cleaned = bleach.Cleaner(
+                tags=allowed_tags,
+                attributes=allowed_attrs,
+                css_sanitizer=css_sanitizer,
+                strip=True,
+            ).clean(content)
+        else:
+            # fallback for older bleach versions
+            cleaned = bleach.clean(
+                content,
+                tags=allowed_tags,
+                attributes=allowed_attrs,
+                strip=True,
+            )
+        return cleaned
+    except Exception as e:
+        logger.error(f"[UTILS] Ошибка санитизации описания: {e}")
+        return escape(content)
+
+
+def html_to_plain_text(content: str | None, max_len: int | None = None) -> str:
+    """
+    Удаляет теги, оставляя только текст. Опционально обрезает до max_len.
+    """
+    if not content:
+        return ""
+
+    text = bleach.clean(content, tags=[], strip=True)
+    return text[:max_len] if max_len else text
 
 
 def allowed_video_file(filename):

@@ -74,8 +74,9 @@
                         
                         <div class="course-card-content">
                             <h3 class="course-card-title">{{ item.title }}</h3>
+                            {% set desc = (item.description|striptags)|trim if item.description else '' %}
                             <p class="course-card-description">
-                                {{ item.description[:80] + '...' if item.description and item.description|length > 80 else item.description or 'Описание отсутствует' }}
+                                {{ desc[:80] + '...' if desc and desc|length > 80 else desc or 'Описание отсутствует' }}
                             </p>
                             
                             <div class="course-card-meta">

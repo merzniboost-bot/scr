@@ -5,7 +5,17 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session, jsonify
 from models import db, Course, Lesson, Test, Question, User, UserProgress, Favorite, TestResult, Assignment, Submission, Category
 from decorators import login_required, role_required, course_owner_required
-from utils import save_file, delete_file, allowed_file, get_course_progress, is_course_favorite, get_lesson_progress_map, render_mini_content
+from utils import (
+    save_file,
+    delete_file,
+    allowed_file,
+    get_course_progress,
+    is_course_favorite,
+    get_lesson_progress_map,
+    render_mini_content,
+    sanitize_html_description,
+    html_to_plain_text,
+)
 from datetime import datetime, timezone
 import logging
 
@@ -81,7 +91,7 @@ def list():
                 courses_json.append({
                     'id': item['course'].id,
                     'title': item['course'].title,
-                    'description': item['course'].description or '',
+                    'description': html_to_plain_text(item['course'].description) if item['course'].description else '',
                     'preview_filename': item['course'].preview_filename,
                     'lesson_count': item['lesson_count'],
                     'test_count': item['test_count'],
@@ -226,7 +236,7 @@ def create():
     if request.method == 'POST':
         try:
             title = request.form.get('title', '').strip()
-            description = request.form.get('description', '').strip()
+            description = sanitize_html_description(request.form.get('description', ''))
             category_id = request.form.get('category_id', '').strip()
 
             # Валидация
@@ -289,7 +299,7 @@ def edit(course_id):
     if request.method == 'POST':
         try:
             title = request.form.get('title', '').strip()
-            description = request.form.get('description', '').strip()
+            description = sanitize_html_description(request.form.get('description', ''))
             category_id = request.form.get('category_id', '').strip()
 
             # Валидация

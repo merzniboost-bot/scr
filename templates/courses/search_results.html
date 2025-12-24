@@ -26,8 +26,9 @@
                 <div style="padding: 25px;">
                     <div style="font-size: 12px; color: #12A0F4; font-weight: 600; margin-bottom: 10px; text-transform: uppercase;">ОБУЧЕНИЕ</div>
                     <h3 style="font-size: 20px; margin-bottom: 10px; color: #081844;">{{ course_data.course.title }}</h3>
+                    {% set desc = (course_data.course.description|striptags)|trim %}
                     <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
-                        {{ course_data.course.description[:100] + '...' if course_data.course.description and course_data.course.description|length > 100 else course_data.course.description or 'Описание отсутствует' }}
+                        {{ desc[:100] + '...' if desc and desc|length > 100 else desc or 'Описание отсутствует' }}
                     </p>
                     
                     <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 14px; color: #666;">

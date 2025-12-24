@@ -46,6 +46,9 @@ def create_app(config_name='development'):
 
     # Загрузка конфигурации
     app.config.from_object(config[config_name])
+    # Внешние ключи (TinyMCE и др.)
+    app.config['TINYMCE_API_KEY'] = os.getenv('TINYMCE_API_KEY', 'no-api-key')
+    app.config['UPLOADCARE_PUBLIC_KEY'] = os.getenv('UPLOADCARE_PUBLIC_KEY', '')
 
     # Инициализация расширений
     db.init_app(app)
@@ -93,13 +96,22 @@ def create_app(config_name='development'):
         """Внедрение текущего пользователя в шаблоны"""
         # Не делаем запросы к БД для статических файлов
         if request.path.startswith('/static'):
-            return dict(current_user=None, csrf_token=generate_csrf)
+            return dict(current_user=None,
+                        csrf_token=generate_csrf,
+                        tinymce_api_key=app.config.get('TINYMCE_API_KEY'),
+                        uploadcare_public_key=app.config.get('UPLOADCARE_PUBLIC_KEY'))
         
         if 'user_id' in session:
             user = db.session.get(User, session['user_id'])
             if user:
-                return dict(current_user=user, csrf_token=generate_csrf)
-        return dict(current_user=None, csrf_token=generate_csrf)
+                return dict(current_user=user,
+                            csrf_token=generate_csrf,
+                            tinymce_api_key=app.config.get('TINYMCE_API_KEY'),
+                            uploadcare_public_key=app.config.get('UPLOADCARE_PUBLIC_KEY'))
+        return dict(current_user=None,
+                    csrf_token=generate_csrf,
+                    tinymce_api_key=app.config.get('TINYMCE_API_KEY'),
+                    uploadcare_public_key=app.config.get('UPLOADCARE_PUBLIC_KEY'))
 
     # ========================================================================
     # ПРОВЕРКА АВТОРИЗАЦИИ ДЛЯ ВСЕХ МАРШРУТОВ

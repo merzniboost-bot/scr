@@ -516,6 +516,10 @@ body.light-theme .overall-stats {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
+body.light-theme .filters-section {
+    background: #ffffff;
+}
+
 body.light-theme .filter-btn {
     border-color: var(--border-light);
     color: #666;
@@ -534,7 +538,12 @@ body.light-theme .filter-btn.active {
 body.light-theme .sort-select select {
     color: var(--text-light);
     border-color: var(--border-light);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233a3a3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-color: #ffffff;
+}
+
+body.light-theme .sort-select select option {
+    background-color: #ffffff;
+    color: var(--text-light);
 }
 
 body.light-theme .course-info h3 {

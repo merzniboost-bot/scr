@@ -10,3 +10,4 @@ python-dotenv
 redis
 bleach==5.0.1
 markdown==3.5.1
+tinycss2==1.5.1

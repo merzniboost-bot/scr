@@ -3,192 +3,30 @@
 {% block title %}Редактировать урок - СКР Digital{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
 <style>
-    .color-button {
-        color: #12A0F4 !important;
-        font-weight: bold !important;
-        font-size: 16px !important;
-        width: 30px !important;
-        height: 30px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border-radius: 4px !important;
-        transition: all 0.2s !important;
-    }
-    
-    .color-button:hover {
-        background: #f0f0f0 !important;
-        color: #0A5D8E !important;
-    }
-
-    /* Фикс смещения редактора: статичный тулбар, читаемый текст */
-    .EasyMDEContainer {
-        max-width: 100%;
-    }
-
-    .editor-toolbar {
-        position: static;
-        background: #ffffff;
-        border: 1px solid #d9d9d9;
-        border-radius: 10px 10px 0 0;
-        z-index: 1;
-    }
-
-    .editor-toolbar a,
-    .editor-toolbar button {
-        color: #0A5D8E !important;
-    }
-
-    .CodeMirror {
-        min-height: 320px;
-        font-size: 15px;
-        line-height: 1.6;
-        background: #ffffff;
-        color: #081844;
-        border: 1px solid #d9d9d9;
-        border-top: none;
-        border-radius: 0 0 10px 10px;
-    }
-
-    .CodeMirror-scroll {
-        min-height: 280px;
-    }
-
-    .editor-statusbar {
-        border: 1px solid #d9d9d9;
-        border-top: none;
-        border-radius: 0 0 10px 10px;
-        background: #fafafa;
-    }
-
-    .editor-preview,
-    .editor-preview-side {
-        background: #ffffff;
-        color: #081844;
+    .tox-tinymce {
+        border-radius: 10px !important;
+        border: 2px solid #e0e0e0 !important;
     }
 </style>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+<script src="https://cdn.tiny.cloud/1/{{ tinymce_api_key }}/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const textarea = document.getElementById('content');
-    if (!textarea) return;
-    
-    // Массив цветов для быстрого выбора
-    const colorPalette = [
-        { name: 'красный', code: '#FF0000' },
-        { name: 'синий', code: '#0000FF' },
-        { name: 'зеленый', code: '#008000' },
-        { name: 'оранжевый', code: '#FFA500' },
-        { name: 'фиолетовый', code: '#800080' },
-        { name: 'черный', code: '#000000' },
-        { name: 'серый', code: '#666666' },
-    ];
-    
-    // Функция для вставки цветного текста
-    function insertColoredText(colorCode) {
-        const editor = easyMDE.codemirror;
-        const selection = editor.getSelection();
-        
-        if (selection) {
-            editor.replaceSelection(`<span style="color: ${colorCode}">${selection}</span>`);
-        } else {
-            editor.replaceSelection(`<span style="color: ${colorCode}">цветной текст</span>`);
-        }
-    }
-    
-    // Создаем кнопку палитры
-    const paletteButton = {
-        name: 'color-palette',
-        action: function() {
-            const palette = document.createElement('div');
-            palette.style.cssText = `
-                position: absolute;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 10px;
-                z-index: 1000;
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            `;
-            
-            colorPalette.forEach(color => {
-                const colorBtn = document.createElement('button');
-                colorBtn.style.cssText = `
-                    width: 35px;
-                    height: 35px;
-                    border-radius: 50%;
-                    background: ${color.code};
-                    border: 2px solid ${color.code === '#000000' ? '#ccc' : 'transparent'};
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                `;
-                colorBtn.title = color.name;
-                
-                colorBtn.addEventListener('mouseenter', () => {
-                    colorBtn.style.transform = 'scale(1.1)';
-                    colorBtn.style.borderColor = '#333';
-                });
-                
-                colorBtn.addEventListener('mouseleave', () => {
-                    colorBtn.style.transform = 'scale(1)';
-                    colorBtn.style.borderColor = color.code === '#000000' ? '#ccc' : 'transparent';
-                });
-                
-                colorBtn.addEventListener('click', () => {
-                    insertColoredText(color.code);
-                    document.body.removeChild(palette);
-                });
-                
-                palette.appendChild(colorBtn);
-            });
-            
-            document.body.appendChild(palette);
-            
-            const toolbar = document.querySelector('.editor-toolbar');
-            const lastButton = toolbar.querySelector('button:last-child');
-            const rect = lastButton.getBoundingClientRect();
-            
-            palette.style.top = (rect.bottom + window.scrollY) + 'px';
-            palette.style.left = (rect.left + window.scrollX - 100) + 'px';
-            
-            setTimeout(() => {
-                document.addEventListener('click', function closePalette(e) {
-                    if (!palette.contains(e.target) && e.target !== lastButton) {
-                        document.body.removeChild(palette);
-                        document.removeEventListener('click', closePalette);
-                    }
-                });
-            }, 0);
-        },
-        className: 'fas fa-fill-drip',
-        title: 'Цвет текста'
-    };
-    
-    // Инициализация EasyMDE
-    const easyMDE = new EasyMDE({
-        element: textarea,
-        spellChecker: false,
-        status: false,
+    tinymce.init({
+        selector: '#content',
+        height: 350,
+        menubar: false,
+        language: 'ru',
+        plugins: 'lists link code',
+        toolbar: 'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | bullist numlist | link | code | removeformat',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; }',
         placeholder: 'Напишите содержание урока...',
-        toolbar: [
-            'undo', 'redo', '|',
-            'heading', 'bold', 'italic', 'strikethrough', '|',
-            paletteButton,
-            '|',
-            'quote', 'code', 'unordered-list', 'ordered-list', 'table', '|',
-            'link', 'image', '|',
-            'preview', '|',
-            'guide'
-        ],
-        autoDownloadFontAwesome: true,
+        branding: false,
+        promotion: false,
+        license_key: 'gpl'
     });
 });
 </script>
@@ -247,11 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="form-group" style="margin-bottom: 25px;">
                 <label for="content" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Содержание урока</label>
-                <textarea id="content" 
-                          name="content" 
-                          rows="10"
-                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ lesson.content or '' }}</textarea>
-                <small style="color: #666; margin-top: 6px; display: block;">Используйте редактор для форматирования: заголовки, списки, ссылки, цитаты, код.</small>
+                <textarea name="content" id="content" style="width: 100%; min-height: 280px;">{{ lesson.content or '' }}</textarea>
+                <small style="color: #666; margin-top: 8px; display: block;">Используйте панель инструментов для форматирования текста.</small>
             </div>
             
             <div class="form-group" style="margin-bottom: 25px;">

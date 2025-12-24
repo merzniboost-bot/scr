@@ -1,5 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* CSS переменные для тем */
+:root {
+  --lesson-bg: #ffffff;
+  --lesson-text: #1A1A1A;
+  --lesson-text-secondary: #666666;
+  --lesson-card-bg: #fff;
+  --lesson-card-border: #E5E5E5;
+  --lesson-header-bg: linear-gradient(175deg, #081844 0%, #007786 100%);
+  --lesson-input-bg: #ffffff;
+  --lesson-input-border: #e0e0e0;
+  --lesson-hover-bg: #f8f8f8;
+  --lesson-active-bg: #E8F3FF;
+  --lesson-content-bg: #F9F9F9;
+}
+
+body.light-theme {
+  --lesson-bg: #ffffff;
+  --lesson-text: #1A1A1A;
+  --lesson-text-secondary: #666666;
+  --lesson-card-bg: #fff;
+  --lesson-card-border: #E5E5E5;
+  --lesson-header-bg: linear-gradient(175deg, #12A0F4 0%, #0A5D8E 100%);
+  --lesson-input-bg: #ffffff;
+  --lesson-input-border: #e0e0e0;
+  --lesson-hover-bg: #f8f8f8;
+  --lesson-active-bg: #E8F3FF;
+  --lesson-content-bg: #F9F9F9;
+}
+
+/* Тёмная тема */
+body:not(.light-theme) {
+  --lesson-bg: #1a1a2e;
+  --lesson-text: #f5f5f5;
+  --lesson-text-secondary: #b0b0b0;
+  --lesson-card-bg: #272727;
+  --lesson-card-border: #404040;
+  --lesson-header-bg: linear-gradient(175deg, #081844 0%, #007786 100%);
+  --lesson-input-bg: #333333;
+  --lesson-input-border: #555555;
+  --lesson-hover-bg: #3a3a3a;
+  --lesson-active-bg: rgba(18, 160, 244, 0.2);
+  --lesson-content-bg: #2d2d2d;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,8 +52,8 @@
 }
 
 body {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--lesson-bg);
+  color: var(--lesson-text);
   line-height: 1.5;
 }
 
@@ -27,7 +71,8 @@ body {
 .course-header {
   padding: 30px 100px;
   position: relative;
-  border-bottom: 1px solid #E5E5E5;
+  border-bottom: 1px solid var(--lesson-card-border);
+  background: var(--lesson-header-bg);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,7 +82,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #E8F3FF;
+  background: rgba(255, 255, 255, 0.15);
   border: none;
   cursor: pointer;
   font-size: 18px;
@@ -45,11 +90,16 @@ body {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: #000;
+  color: #fff;
   z-index: 1000;
   flex-shrink: 0;
   position: static;
   margin-right: 20px;
+  transition: background 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .course-title {
@@ -135,8 +185,8 @@ body {
 }
 
 .progress-sidebar {
-  background: #fff;
-  border: 1px solid #E5E5E5;
+  background: var(--lesson-card-bg);
+  border: 1px solid var(--lesson-card-border);
   border-radius: 12px;
   padding: 24px;
   max-height: 700px;
@@ -144,7 +194,7 @@ body {
   overflow-x: hidden;
   direction: rtl;
   scrollbar-width: thin;
-  scrollbar-color: rgb(173, 173, 173) #f1f1f1;
+  scrollbar-color: rgb(173, 173, 173) var(--lesson-content-bg);
 }
 
 .progress-sidebar > * {
@@ -172,7 +222,7 @@ body {
 .progress-sidebar h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: var(--lesson-text);
   margin-bottom: 20px;
 }
 
@@ -183,14 +233,14 @@ body {
 }
 
 .progress-label {
-  color: #666666;
+  color: var(--lesson-text-secondary);
   font-size: 14px;
 }
 
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: #E5E5E5;
+  background: var(--lesson-card-border);
   border-radius: 3px;
   margin-bottom: 32px;
   overflow: hidden;
@@ -214,10 +264,10 @@ body {
 .module-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: var(--lesson-text);
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #E5E5E5;
+  border-bottom: 1px solid var(--lesson-card-border);
 }
 
 .lesson-item {
@@ -225,13 +275,13 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #F5F5F5;
+  border-bottom: 1px solid var(--lesson-card-border);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .lesson-item:hover {
-  background: #f8f8f8;
+  background: var(--lesson-hover-bg);
   border-radius: 8px;
   margin: 0 -12px;
   padding: 12px;
@@ -242,7 +292,7 @@ body {
 }
 
 .lesson-item.active {
-  background: #E8F3FF;
+  background: var(--lesson-active-bg);
   border-radius: 8px;
   margin: 0 -12px;
   padding: 12px;
@@ -256,13 +306,13 @@ body {
 
 .lesson-number {
   font-size: 12px;
-  color: #666666;
+  color: var(--lesson-text-secondary);
   min-width: 24px;
 }
 
 .lesson-name {
   font-size: 14px;
-  color: #1A1A1A;
+  color: var(--lesson-text);
 }
 
 .lesson-item.active .lesson-name {
@@ -272,7 +322,7 @@ body {
 
 .lesson-duration {
   font-size: 12px;
-  color: #666666;
+  color: var(--lesson-text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -317,28 +367,32 @@ body {
 .description-block h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: var(--lesson-text);
   margin-bottom: 16px;
 }
 
 .text-card {
-  background: #F9F9F9;
+  background: var(--lesson-content-bg);
   border-radius: 8px;
   padding: 20px;
 }
 
 .text-card p {
-  color: #666666;
+  color: var(--lesson-text-secondary);
   font-size: 14px;
   line-height: 1.6;
 }
 
-/* Контент урока (Markdown из редактора) */
+/* Контент урока (WYSIWYG редактор) */
 .text-card .lesson-content {
   display: block;
-  color: #2c2c2c;
   font-size: 16px;
   line-height: 1.7;
+}
+
+/* Цвет по умолчанию только если нет inline-стилей */
+.text-card .lesson-content:not([style*="color"]) {
+  color: var(--lesson-text);
 }
 
 .text-card .lesson-content h1,
@@ -348,13 +402,33 @@ body {
 .text-card .lesson-content h5,
 .text-card .lesson-content h6 {
   margin: 18px 0 10px;
-  color: #081844;
   line-height: 1.3;
+}
+
+/* Цвет заголовков по умолчанию только если нет inline-стилей */
+.text-card .lesson-content h1:not([style*="color"]),
+.text-card .lesson-content h2:not([style*="color"]),
+.text-card .lesson-content h3:not([style*="color"]),
+.text-card .lesson-content h4:not([style*="color"]),
+.text-card .lesson-content h5:not([style*="color"]),
+.text-card .lesson-content h6:not([style*="color"]) {
+  color: var(--lesson-text);
 }
 
 .text-card .lesson-content p {
   margin: 10px 0;
-  color: #2c2c2c;
+}
+
+/* Цвет параграфов по умолчанию только если нет inline-стилей */
+.text-card .lesson-content p:not([style*="color"]) {
+  color: var(--lesson-text);
+}
+
+/* Сохраняем inline-стили для всех элементов */
+.text-card .lesson-content [style*="color"],
+.text-card .lesson-content [style*="background"],
+.text-card .lesson-content [style*="text-decoration"] {
+  /* Inline стили имеют приоритет */
 }
 
 .text-card .lesson-content ul,
@@ -996,48 +1070,18 @@ video:focus {
 /* новое */
 /* static/css/lesson.css */
 
-/* Стили для контента урока */
+/* Стили для контента урока - убираем переопределения цвета */
 .lesson-content {
     font-size: 16px;
     line-height: 1.6;
-    color: #333;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    margin-top: 20px;
-    overflow-wrap: break-word;
 }
 
-/* Стили для цветного текста */
-.lesson-content span[style*="color:"] {
-    font-weight: 500;
-    padding: 0 2px;
-    margin: 0 1px;
-    border-radius: 3px;
+/* Inline-стили всегда имеют приоритет над CSS */
+.lesson-content *[style] {
+    /* Сохраняем все inline-стили без переопределения */
 }
 
-/* Подсветка для разных цветов */
-.lesson-content span[style*="color: #FF0000"],
-.lesson-content span[style*="color: red"] {
-    background: rgba(255, 0, 0, 0.05);
-}
-.lesson-content span[style*="color: #0000FF"],
-.lesson-content span[style*="color: blue"] {
-    background: rgba(0, 0, 255, 0.05);
-}
-.lesson-content span[style*="color: #008000"],
-.lesson-content span[style*="color: green"] {
-    background: rgba(0, 128, 0, 0.05);
-}
-.lesson-content span[style*="color: #FFA500"],
-.lesson-content span[style*="color: orange"] {
-    background: rgba(255, 165, 0, 0.05);
-}
-.lesson-content span[style*="color: #800080"],
-.lesson-content span[style*="color: purple"] {
-    background: rgba(128, 0, 128, 0.05);
-}
-.lesson-content span[style*="color: #000000"],
-.lesson-content span[style*="color: black"] {
-    background: rgba(0, 0, 0, 0.05);
+/* Дефолтный цвет только для элементов БЕЗ inline-стилей */
+.lesson-content *:not([style*="color"]) {
+    color: inherit;
 }

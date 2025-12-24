@@ -16,6 +16,7 @@
     <div class="filters-section">
         <div class="filter-buttons">
             {% set current_filter = request.args.get('filter', 'all') %}
+            {% set current_sort = request.args.get('sort', 'default') %}
             <a href="{{ url_for('user.progress') }}" 
                class="filter-btn {{ 'active' if current_filter == 'all' or not request.args.get('filter') else '' }}">
                 Все курсы
@@ -32,10 +33,18 @@
         
         <div class="sort-select">
             <select onchange="window.location.href=this.value">
-                <option value="{{ url_for('user.progress') }}">Сортировка</option>
-                <option value="{{ url_for('user.progress', sort='progress') }}">По прогрессу</option>
-                <option value="{{ url_for('user.progress', sort='name') }}">По названию</option>
-                <option value="{{ url_for('user.progress', sort='date') }}">По дате</option>
+                <option value="{{ url_for('user.progress', filter=current_filter if current_filter != 'all' else None) }}" {{ 'selected' if current_sort in ['default', None] else '' }}>
+                    Сортировка
+                </option>
+                <option value="{{ url_for('user.progress', filter=current_filter if current_filter != 'all' else None, sort='progress') }}" {{ 'selected' if current_sort == 'progress' else '' }}>
+                    По прогрессу
+                </option>
+                <option value="{{ url_for('user.progress', filter=current_filter if current_filter != 'all' else None, sort='name') }}" {{ 'selected' if current_sort == 'name' else '' }}>
+                    По названию
+                </option>
+                <option value="{{ url_for('user.progress', filter=current_filter if current_filter != 'all' else None, sort='date') }}" {{ 'selected' if current_sort == 'date' else '' }}>
+                    По дате
+                </option>
             </select>
         </div>
     </div>
@@ -43,7 +52,7 @@
     {% if courses_progress %}
         <div class="courses-grid">
             {% for item in courses_progress %}
-            <div class="course-card{% if loop.index % 4 == 2 %}s{% elif loop.index % 4 == 3 %}se{% elif loop.index % 4 == 0 %}ses{% endif %}">
+            <div class="course-card">
                 <div class="course-header">
                     {% set course = item.course if item.course is defined else none %}
                     {% if course and course.preview_filename %}
