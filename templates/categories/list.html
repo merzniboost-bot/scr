@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Управление категориями - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-categories.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-categories">
+        <div class="admin-categories__top">
+            <div class="admin-categories__titles">
+                <p class="eyebrow">Администрирование</p>
+                <h1>Управление категориями</h1>
+                <p class="subtitle">Создавайте и управляйте цветными метками для курсов</p>
+            </div>
+            <a class="btn-primary" href="{{ url_for('categories.create_category') }}">
+                + Создать категорию
+            </a>
+        </div>
+
+        {% if categories %}
+        <div class="categories-grid">
+            {% for category in categories %}
+            <div class="category-card">
+                <div class="category-card__status">
+                    {% if category.is_active %}
+                        <span class="badge badge--success">Активна</span>
+                    {% else %}
+                        <span class="badge badge--danger">Неактивна</span>
+                    {% endif %}
+                </div>
+
+                <div class="category-card__header">
+                    <div class="category-card__icon" style="background: {{ category.color }}">
+                        {{ category.icon }}
+                    </div>
+                    <div class="category-card__info">
+                        <h3>{{ category.name }}</h3>
+                        <p>Создал: {{ category.creator.fullname if category.creator else 'Неизвестно' }}</p>
+                    </div>
+                </div>
+
+                {% if category.description %}
+                <p class="category-card__description">
+                    {{ category.description }}
+                </p>
+                {% endif %}
+
+                <div class="category-card__meta">
+                    <div class="meta-block">
+                        <span class="meta-label">Курсов:</span>
+                        <span class="meta-value">{{ category.courses.count() }}</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="color-dot" style="background: {{ category.color }}"></span>
+                        <span class="meta-code">{{ category.color }}</span>
+                    </div>
+                </div>
+
+                <div class="category-card__actions">
+                    <a class="btn-secondary" href="{{ url_for('categories.edit_category', category_id=category.id) }}">
+                        ✏️ Редактировать
+                    </a>
+
+                    <form method="post" action="{{ url_for('categories.toggle_category', category_id=category.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn-outline {{ 'btn-outline--success' if not category.is_active else 'btn-outline--danger' }}">
+                            {{ 'Активировать' if not category.is_active else 'Деактивировать' }}
+                        </button>
+                    </form>
+
+                    <form method="post" action="{{ url_for('categories.delete_category', category_id=category.id) }}"
+                          onsubmit="return confirm('Вы уверены, что хотите удалить категорию {{ category.name }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn-danger">
+                            🗑️ Удалить
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📂</div>
+            <h3>Категории пока не созданы</h3>
+            <p>Создайте первую категорию, чтобы начать использовать их в курсах</p>
+            <a class="btn-primary" href="{{ url_for('categories.create_category') }}">
+                + Создать первую категорию
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

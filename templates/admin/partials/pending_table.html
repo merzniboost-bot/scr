@@ -1,0 +1,33 @@
+{% for u in pending_users %}
+<tr class="user-row" data-user-id="{{ u.id }}">
+    <td>
+        <div class="user-info">
+            <div class="user-avatar">{{ u.fullname[:2]|upper }}</div>
+            <div class="user-details">
+                <div class="user-name">{{ u.fullname }}</div>
+            </div>
+        </div>
+    </td>
+    <td>{{ u.email }}</td>
+    <td>
+        <span class="role-badge {{ u.role }}">
+            {{ 'Преподаватель' if u.role == 'teacher' else 'Студент' }}
+        </span>
+    </td>
+    <td>{{ u.created_at|datetime }}</td>
+    <td>
+        <div class="actions">
+            <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="action-btn approve-btn">✓ Подтвердить</button>
+            </form>
+            
+            <button class="action-btn delete-user" 
+                    data-user-id="{{ u.id }}"
+                    data-username="{{ u.fullname }}">
+                ✗ Отклонить
+            </button>
+        </div>
+    </td>
+</tr>
+{% endfor %}

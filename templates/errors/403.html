@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Доступ запрещен - СКР Digital{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 100px 20px;">
+    <h1 style="font-size: 120px; margin: 0; color: #ff9800;">403</h1>
+    <h2 style="font-size: 32px; margin: 20px 0; color: #1A1A1A;">Доступ запрещен</h2>
+    <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        У вас нет прав для доступа к этой странице
+    </p>
+    <a href="{{ url_for('home') }}" class="btn" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 10px; font-weight: 600;">
+        Вернуться на главную
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} - {{ lesson.course.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lesson.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="header"></div>
+
+<div class="course-header">
+    <a href="{{ url_for('courses.detail', course_id=lesson.course_id) }}" class="back-button">⭠</a>
+
+    <div class="course-title">
+        <h1><FONT COLOR = "white">{{ lesson.course.title }}</FONT></h1>
+        <p id="current-lesson-title">Урок {{ lesson.order }}: {{ lesson.title }}</p>
+    </div>
+
+    <div class="lesson-counter">
+        {% if current_position and total_materials %}
+            {{ current_position }} из {{ total_materials }}
+        {% else %}
+            Урок {{ lesson.order }}
+        {% endif %}
+        
+        {% if next_lesson %}
+            <a href="{{ url_for('lessons.detail', lesson_id=next_lesson.id) }}" class="btn-next">
+                Следующий урок →
+            </a>
+        {% else %}
+            <a href="{{ url_for('courses.detail', course_id=lesson.course_id) }}" class="btn-next">
+                Вернуться к курсу
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="lesson-main">
+        {% if lesson.content %}
+        <div class="description-block">
+            <h3>Содержание урока</h3>
+            <div class="text-card">
+                <div class="lesson-content">
+                    {{ content_rendered|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if can_edit %}
+        <div class="description-block">
+            <h3>Управление уроком</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+                <a href="{{ url_for('lessons.edit', lesson_id=lesson.id) }}"
+                   style="padding: 10px 20px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600;">
+                    ✏️ Редактировать урок
+                </a>
+                <form method="post" action="{{ url_for('lessons.delete', lesson_id=lesson.id) }}"
+                      style="display: inline;"
+                      onsubmit="return confirm('Вы уверены, что хотите удалить этот урок?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn-danger"
+                            style="padding: 10px 20px; background: #ff5252; color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        🗑️ Удалить урок
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if lesson.video_filename and lesson.video_filename.strip() %}
+        <div class="video-container">
+            {% if video_is_link %}
+                {% if video_embed_url %}
+                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+                        <iframe src="{{ video_embed_url }}" frameborder="0" allowfullscreen
+                                style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius: 12px;"></iframe>
+                    </div>
+                {% else %}
+                    <div class="no-video-placeholder">
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <p>Видео ссылка: <a href="{{ lesson.video_filename }}" target="_blank" rel="noopener">{{ lesson.video_filename }}</a></p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <video
+                    id="lesson-video"
+                    width="940"
+                    height="617"
+                    controls
+                    controlsList="nodownload"
+                    oncontextmenu="return false;">
+                    <source src="{{ url_for('lessons.serve_file', filename=lesson.video_filename) }}" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Задания урока -->
+        {% set assignments = lesson.assignments.all() %}
+        {% if assignments %}
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; margin-top: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #081844; margin: 0;">
+                    📝 Задания ({{ assignments|length }})
+                </h2>
+                {% if can_edit %}
+                <a href="{{ url_for('assignments.create', lesson_id=lesson.id) }}"
+                   style="padding: 10px 20px; background: linear-gradient(135deg, #FF9800, #F57C00); color: white; text-decoration: none; border-radius: 10px; font-weight: 600;">
+                    + Добавить задание
+                </a>
+                {% endif %}
+            </div>
+
+            <div style="display: grid; gap: 15px;">
+                {% for assignment in assignments %}
+                {% set user_submission = None %}
+                {% if current_user and current_user.role == 'student' %}
+                    {% set user_submission = assignment.submissions.filter_by(student_id=current_user.id).first() %}
+                {% endif %}
+
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid {{ '#4CAF50' if user_submission else '#FF9800' }};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 18px; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                                {{ assignment.title }}
+                                {% if assignment.is_required %}
+                                <span style="background: #ffebee; color: #c62828; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">Обязательное</span>
+                                {% endif %}
+                            </h3>
+
+                            {% if assignment.description %}
+                            <p style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 10px;">
+                                {{ assignment.description[:200] }}{{ '...' if assignment.description|length > 200 }}
+                            </p>
+                            {% endif %}
+
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 13px; color: #888;">
+                                {% if assignment.deadline %}
+                                <span style="color: {{ '#c62828' if assignment.is_overdue() else '#666' }};">
+                                    ⏰ До {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') }}
+                                    {% if assignment.is_overdue() %}(просрочено){% endif %}
+                                </span>
+                                {% endif %}
+                                <span>📎 {{ assignment.allowed_extensions }}</span>
+                                <span>📦 До {{ assignment.max_file_size_mb }} МБ</span>
+                            </div>
+                        </div>
+
+                        <div style="flex-shrink: 0; display: flex; gap: 10px; align-items: center;">
+                            {% if current_user and current_user.role == 'student' %}
+                                {% if user_submission %}
+                                <span style="background: #e8f5e9; color: #2e7d32; padding: 6px 14px; border-radius: 15px; font-size: 13px; font-weight: 600;">
+                                    ✓ Сдано
+                                    {% if user_submission.grade is not none %}
+                                    ({{ user_submission.grade }}/100)
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                <a href="{{ url_for('assignments.submit', assignment_id=assignment.id) }}"
+                                   style="padding: 10px 20px; background: linear-gradient(135deg, #12A0F4, #0A5D8E); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                                    {{ 'Обновить' if user_submission else 'Сдать работу' }}
+                                </a>
+                            {% endif %}
+
+                            {% if can_edit %}
+                            <a href="{{ url_for('assignments.view_submissions', assignment_id=assignment.id) }}"
+                               style="padding: 10px 20px; background: #e3f2fd; color: #1976d2; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                                📋 Работы ({{ assignment.submissions.count() }})
+                            </a>
+                            <a href="{{ url_for('assignments.edit', assignment_id=assignment.id) }}"
+                               style="padding: 10px 16px; background: #f0f0f0; color: #666; text-decoration: none; border-radius: 10px;">
+                                ✏️
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if lesson.file_filename or lesson.video_filename %}
+        <div class="description-block">
+            <h3>Материалы урока</h3>
+            <div class="learning-list">
+                {% if lesson.file_filename %}
+                    {% if file_is_link %}
+                        <a href="{{ lesson.file_filename }}" class="download-link" target="_blank" rel="noopener">
+                            📎 Открыть материал
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='file') }}"
+                           class="download-link" download>
+                            📎 Скачать прикрепленный файл
+                        </a>
+                    {% endif %}
+                {% endif %}
+                {% if lesson.video_filename %}
+                    {% if video_is_link %}
+                        <a href="{{ lesson.video_filename }}" class="download-link" target="_blank" rel="noopener">
+                            📹 Открыть видео
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('lessons.download_file', lesson_id=lesson.id, file_type='video') }}"
+                           class="download-link" download>
+                            📹 Скачать видео урока
+                        </a>
+                    {% endif %}
+                {% endif %}
+                <div class="meta-item">
+                    <span>{{ lesson.created_at|datetime }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user and not is_completed %}
+        <div class="description-block">
+            <form id="finish-lesson-form" method="post" action="{{ url_for('lessons.mark_complete', lesson_id=lesson.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit"
+                        style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50, #81C784); color: #ffffff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    Закончить урок
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="progress-sidebar">
+        <h3>Прогресс курса</h3>
+
+        {% set progress = course_progress if course_progress else {'completed': 0, 'total': 0, 'percent': 0} %}
+
+        <div class="progress-info">
+            <span class="progress-label">Пройдено</span>
+            <span class="progress-label" id="progress-counter">
+                {{ progress.completed }} из {{ progress.total }} элементов
+            </span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: {{ progress.percent }}%;"></div>
+        </div>
+
+        {% set current_module = '' %}
+
+        {% for course_lesson in lesson.course.lessons %}
+            {% set lesson_module = 'МОДУЛЬ ' ~ ((loop.index - 1) // 4 + 1) %}
+
+            {% if lesson_module != current_module %}
+                {% if not loop.first %}
+                    </div>
+                {% endif %}
+
+                <div class="module">
+                    <div class="module-title">{{ lesson_module }}</div>
+
+                {% set current_module = lesson_module %}
+            {% endif %}
+
+            <div class="lesson-item {% if course_lesson.id == lesson.id %}active{% endif %} {% if lesson_progress and lesson_progress.get(course_lesson.id) %}completed{% endif %}"
+                 data-lesson="{{ course_lesson.order }}">
+                <a href="{{ url_for('lessons.detail', lesson_id=course_lesson.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div class="lesson-content">
+                        <span class="lesson-number">{{ course_lesson.order }}</span>
+                        <span class="lesson-name">{{ course_lesson.title }}</span>
+                        {% if lesson_progress and lesson_progress.get(course_lesson.id) %}
+                            <span class="lesson-check">✓</span>
+                        {% endif %}
+                    </div>
+                    <span class="lesson-duration">
+                        {% if course_lesson.video_filename %}📹{% endif %}
+                        {% if course_lesson.file_filename %}📎{% endif %}
+                    </span>
+                </a>
+            </div>
+
+            {% if loop.last %}
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Тесты курса -->
+        {% if lesson.course.tests %}
+            <div class="module">
+                <div class="module-title">ТЕСТИРОВАНИЕ</div>
+                {% for test in lesson.course.tests %}
+                    <div class="lesson-item test-item">
+                        <a href="{{ url_for('tests.take', test_id=test.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="lesson-content">
+                                <span class="lesson-number">📝</span>
+                                <span class="lesson-name">{{ test.title }}</span>
+                            </div>
+                            <span class="lesson-duration">{{ test.questions|length }} вопр.</span>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if lesson.video_filename %}
+        <div class="meta-item">
+            <span>Видео-урок</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Автоматическая отметка при досмотре видео
+const video = document.getElementById('lesson-video');
+const finishForm = document.getElementById('finish-lesson-form');
+if (video && finishForm) {
+    video.addEventListener('ended', function() {
+        {% if not is_completed %}
+        if (confirm('Вы досмотрели урок до конца. Отметить его как завершенный?')) {
+            finishForm.submit();
+        }
+        {% endif %}
+    });
+}
+</script>
+{% endblock %}

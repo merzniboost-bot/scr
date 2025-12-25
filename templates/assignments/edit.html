@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать задание - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 0 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <!-- Навигация -->
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('lessons.detail', lesson_id=assignment.lesson_id) }}" 
+               style="color: #12A0F4; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                ← Вернуться к уроку
+            </a>
+        </div>
+        
+        <h1 style="font-size: 32px; font-weight: 700; color: #081844; margin-bottom: 10px;">
+            ✏️ Редактировать задание
+        </h1>
+        <p style="color: #666; margin-bottom: 30px;">
+            Урок: <strong>{{ assignment.lesson.title }}</strong>
+        </p>
+        
+        <form method="post" style="display: grid; gap: 25px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <!-- Название -->
+            <div>
+                <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                    Название задания *
+                </label>
+                <input type="text" name="title" value="{{ assignment.title }}" required
+                       placeholder="Например: Практическая работа №1"
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; transition: border-color 0.3s;">
+            </div>
+            
+            <!-- Описание -->
+            <div>
+                <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                    Описание задания
+                </label>
+                <textarea name="description" rows="5"
+                          placeholder="Опишите, что нужно сделать студенту..."
+                          style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; resize: vertical;">{{ assignment.description or '' }}</textarea>
+            </div>
+            
+            <!-- Дедлайн -->
+            <div>
+                <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                    Дедлайн (опционально)
+                </label>
+                {% if assignment.deadline %}
+                    {% set local_deadline = assignment.deadline.replace(tzinfo=utc).astimezone(msk) %}
+                    <input type="datetime-local" name="deadline" 
+                           value="{{ local_deadline.strftime('%Y-%m-%dT%H:%M') }}"
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px;">
+                {% else %}
+                    <input type="datetime-local" name="deadline"
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px;">
+                {% endif %}
+                <p style="font-size: 13px; color: #888; margin-top: 5px;">
+                    Оставьте пустым, если дедлайн не требуется
+                </p>
+            </div>
+            
+            <!-- Настройки файла -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                        Макс. размер файла (МБ)
+                    </label>
+                    <input type="number" name="max_file_size" value="{{ assignment.max_file_size_mb }}" min="1" max="100"
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px;">
+                </div>
+                
+                <div>
+                    <label style="display: block; font-weight: 600; color: #081844; margin-bottom: 8px;">
+                        Разрешенные форматы
+                    </label>
+                    <input type="text" name="allowed_extensions" value="{{ assignment.allowed_extensions }}"
+                           placeholder="pdf,doc,docx,zip"
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px;">
+                    <p style="font-size: 13px; color: #888; margin-top: 5px;">
+                        Через запятую, без точек
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Обязательное -->
+            <div>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="is_required" {% if assignment.is_required %}checked{% endif %}
+                           style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="font-weight: 600; color: #081844;">Обязательное задание</span>
+                </label>
+                <p style="font-size: 13px; color: #888; margin-top: 5px; margin-left: 30px;">
+                    Обязательные задания влияют на прогресс прохождения курса
+                </p>
+            </div>
+            
+            <!-- Кнопки -->
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                    💾 Сохранить изменения
+                </button>
+                <a href="{{ url_for('lessons.detail', lesson_id=assignment.lesson_id) }}" 
+                   style="padding: 16px 30px; background: #f0f0f0; color: #666; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 600; text-align: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

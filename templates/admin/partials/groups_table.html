@@ -1,0 +1,31 @@
+{% if groups %}
+{% for group in groups %}
+<tr>
+    <td>
+        <div class="user-info">
+            <div class="user-avatar">
+                {{ group.name[:2]|upper }}
+            </div>
+            <div class="user-details">
+                <div class="user-name">{{ group.name }}</div>
+            </div>
+        </div>
+    </td>
+    <td>{{ group.description or '—' }}</td>
+    <td>{{ group.students|length if group.students else 0 }}</td>
+    <td>
+        <div class="actions">
+            <a href="{{ url_for('admin.group_students', group_id=group.id) }}" class="action-btn">Студенты</a>
+            {% if group.students|length == 0 %}
+            <form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="action-btn" onclick="return confirm('Удалить группу?')">Удалить</button>
+            </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="4" style="text-align:center; padding:20px; color:#666;">Нет групп</td></tr>
+{% endif %}

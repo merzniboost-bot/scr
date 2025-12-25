@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Результат теста - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=result.test.course_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="font-size: 32px; margin-bottom: 10px; color: #081844;">Результат теста</h1>
+            <p style="color: #666; font-size: 18px;">{{ result.test.title }}</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #12A0F4 0%, #0d7bc4 100%); border-radius: 20px; padding: 40px; margin-bottom: 30px; text-align: center; color: white;">
+            <div style="font-size: 72px; font-weight: bold; margin-bottom: 10px;">{{ percent }}%</div>
+            <div style="font-size: 24px; margin-bottom: 20px;">{{ result.score }} из {{ result.total }} правильных ответов</div>
+            <div style="font-size: 20px; padding: 10px 20px; background: rgba(255, 255, 255, 0.2); border-radius: 10px; display: inline-block;">
+                Оценка: <strong>{{ grade }}</strong>
+            </div>
+        </div>
+        
+        <div style="background: #f8f9fa; border-radius: 15px; padding: 30px; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #081844; margin-bottom: 20px;">Информация о прохождении</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Студент</div>
+                    <div style="color: #081844; font-weight: 600; font-size: 16px;">{{ result.student.fullname }}</div>
+                </div>
+                <div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Курс</div>
+                    <div style="color: #081844; font-weight: 600; font-size: 16px;">{{ result.test.course.title }}</div>
+                </div>
+                <div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Дата прохождения</div>
+                    <div style="color: #081844; font-weight: 600; font-size: 16px;">{{ result.created_at|datetime }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <a href="{{ url_for('courses.detail', course_id=result.test.course_id) }}" 
+               style="padding: 12px 30px; background: #12A0F4; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease;"
+               onmouseover="this.style.background='#0d7bc4';"
+               onmouseout="this.style.background='#12A0F4';">
+                Вернуться к курсу
+            </a>
+            <a href="{{ url_for('tests.my_results') }}" 
+               style="padding: 12px 30px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease;"
+               onmouseover="this.style.background='#e0e0e0';"
+               onmouseout="this.style.background='#f5f5f5';">
+                Мои результаты
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Центр управления - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Сайдбар -->
+    <div class="sidebar">
+        <div class="text">
+            <div class="logo">
+                <h1>Центр управления</h1>
+                <p>Онлайн-школа колледжа</p>
+            </div>
+            
+            <div class="nav-section">
+                <h2>УПРАВЛЕНИЕ</h2>
+                <div class="nav-item active" data-content="users">
+                    <span>Пользователи</span>
+                    <span class="count" id="users-count">{{ stats.total_users }}</span>
+                </div>
+                <div class="nav-item" data-content="courses">
+                    <span>Курсы</span>
+                    <span class="count">{{ stats.total_courses }}</span>
+                </div>
+                <div class="nav-item" data-content="pending">
+                    <span>Ожидают подтверждения</span>
+                    <span class="count pending-badge">{{ stats.pending_users }}</span>
+                </div>
+                <div class="nav-item" data-content="groups">
+                    <span>Группы</span>
+                    <span class="count">{{ groups|length }}</span>
+                </div>
+            </div>
+            
+            <div class="nav-section">
+                <h2>СТАТИСТИКА</h2>
+                <div class="stat-item">
+                    <span>Уроков</span>
+                    <span class="count">{{ stats.total_lessons }}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Тестов</span>
+                    <span class="count">{{ stats.total_tests }}</span>
+                </div>
+                <div class="nav-item" data-content="analytics">
+                    <span>📊 Аналитика тестов</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="main-content-wrapper">
+        <!-- Кнопка Назад -->
+        <div class="back-button-container">
+            <a href="{{ url_for('home') }}" class="back-button">← Назад</a>
+        </div>
+
+        <!-- Контент пользователей -->
+        <div class="content-section active" id="users-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Пользователи</h1>
+                        <p>Управление студентами и преподавателями</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все пользователи (<span id="users-table-count">{{ users|length }}</span>)</h2>
+                    <form action="{{ url_for('admin.dashboard') }}" method="get" class="admin-search-form" data-scope="users">
+                        <input name="search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('search', '') }}" autocomplete="off">
+                        <button type="submit">Поиск</button>
+                    </form>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>ГРУППА</th>
+                            <th>РОЛЬ</th>
+                            <th>СТАТУС</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        {% include 'admin/partials/users_table.html' with context %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент ожидающих подтверждения -->
+        <div class="content-section" id="pending-content">
+            <div class="top">
+                <h1>Ожидают подтверждения</h1>
+                <p>Новые пользователи, требующие одобрения</p>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Ожидают подтверждения (<span id="pending-table-count">{{ pending_users|length }}</span>)</h2>
+                </div>
+                
+                {% if pending_users %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>EMAIL</th>
+                            <th>РОЛЬ</th>
+                            <th>ДАТА РЕГИСТРАЦИИ</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-table-body">
+                        {% include 'admin/partials/pending_table.html' with context %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>Нет ожидающих подтверждения пользователей</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Контент курсов -->
+        <div class="content-section" id="courses-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Курсы</h1>
+                        <p>Управление образовательными курсами</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все курсы (<span id="courses-table-count">{{ recent_courses|length }}</span>)</h2>
+                    <form action="{{ url_for('admin.dashboard') }}" method="get" class="admin-search-form" data-scope="courses">
+                        <input name="course_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('course_search', '') }}" autocomplete="off">
+                        <button type="submit">Поиск</button>
+                    </form>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>КУРС</th>
+                            <th>ПРЕПОДАВАТЕЛЬ</th>
+                            <th>УРОКОВ</th>
+                            <th>СОЗДАН</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courses-table-body">
+                        {% include 'admin/partials/courses_table.html' with context %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент групп -->
+        <div class="content-section" id="groups-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>Группы</h1>
+                        <p>Управление учебными группами</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Все группы (<span id="groups-table-count">{{ groups|length }}</span>)</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <form action="{{ url_for('admin.dashboard') }}" method="get" style="display: flex; gap: 10px; align-items: center;" class="admin-search-form" data-scope="groups">
+                            <input name="group_search" placeholder="Искать здесь..." type="search" value="{{ request.args.get('group_search', '') }}" autocomplete="off">
+                            <button type="submit">Поиск</button>
+                        </form>
+                        <button class="action-btn create-btn" id="add-group-btn">
+                            + Создать группу
+                        </button>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>НАЗВАНИЕ</th>
+                            <th>ОПИСАНИЕ</th>
+                            <th>СТУДЕНТОВ</th>
+                            <th>ДЕЙСТВИЯ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="groups-table-body">
+                        {% include 'admin/partials/groups_table.html' with context %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Контент аналитики тестов -->
+        <div class="content-section" id="analytics-content">
+            <div class="top">
+                <div class="top-header">
+                    <div>
+                        <h1>📊 Аналитика тестов</h1>
+                        <p>Статистика сложности тестов и успеваемости студентов</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>Сложные тесты (где студенты чаще ошибаются)</h2>
+                </div>
+                
+                {% if test_analytics %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ТЕСТ</th>
+                            <th>КУРС</th>
+                            <th>ПОПЫТОК</th>
+                            <th>СРЕДНИЙ %</th>
+                            <th>НЕ СДАЛИ</th>
+                            <th>% НЕУДАЧ</th>
+                            <th>СЛОЖНОСТЬ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in test_analytics %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('tests.manage', test_id=item.test_id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">
+                                    {{ item.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('courses.detail', course_id=item.course_id) }}" style="color: #666; text-decoration: none;">
+                                    Курс #{{ item.course_id }}
+                                </a>
+                            </td>
+                            <td>{{ item.attempts }}</td>
+                            <td>
+                                <span style="color: {% if item.avg_score >= 60 %}#4CAF50{% elif item.avg_score >= 40 %}#FF9800{% else %}#f44336{% endif %}; font-weight: 600;">
+                                    {{ item.avg_score }}%
+                                </span>
+                            </td>
+                            <td>{{ item.failed_count }}</td>
+                            <td>
+                                <span style="color: {% if item.failed_rate > 50 %}#f44336{% elif item.failed_rate > 30 %}#FF9800{% else %}#4CAF50{% endif %}; font-weight: 600;">
+                                    {{ item.failed_rate }}%
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.difficulty == 'high' %}
+                                    <span style="padding: 4px 12px; background: #ffebee; color: #c62828; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🔴 Высокая
+                                    </span>
+                                {% elif item.difficulty == 'medium' %}
+                                    <span style="padding: 4px 12px; background: #fff3e0; color: #e65100; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🟡 Средняя
+                                    </span>
+                                {% else %}
+                                    <span style="padding: 4px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        🟢 Низкая
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding: 40px; text-align: center; color: #666;">
+                    <p>📭 Пока нет данных для аналитики</p>
+                    <p style="font-size: 14px;">Статистика появится после того, как студенты начнут проходить тесты</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования пользователя -->
+<div class="modal-overlay" id="user-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Редактировать пользователя</h2>
+            <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <form id="user-form" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" id="user-id" name="user_id" value="">
+            
+            <div class="form-group">
+                <label class="form-label" for="user-fullname">ФИО</label>
+                <input type="text" id="user-fullname" name="fullname" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-email">Email</label>
+                <input type="email" id="user-email" name="email" class="form-input" disabled>
+                <small>Email нельзя изменить</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-group">Группа</label>
+                <select id="user-group" name="group_id" class="form-select">
+                    <option value="">Без группы</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="user-role">Роль</label>
+                <select id="user-role" name="role" class="form-select" required>
+                    <option value="student">Студент</option>
+                    <option value="teacher">Преподаватель</option>
+                    <option value="admin">Администратор</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="modal-cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="modal-save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для создания группы -->
+<div class="modal-overlay" id="group-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Создать группу</h2>
+            <button class="modal-close" id="group-modal-close">&times;</button>
+        </div>
+        <form method="post" action="{{ url_for('admin.add_group') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group">
+                <label class="form-label" for="group-name">Название группы</label>
+                <input type="text" id="group-name" name="name" class="form-input" required placeholder="Например: 2KC-24">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="group-description">Описание</label>
+                <input type="text" id="group-description" name="description" class="form-input" placeholder="Необязательно">
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="group-modal-cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary">Создать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для подтверждения удаления -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Подтверждение удаления</h2>
+            <button class="modal-close" id="delete-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="delete-message">Вы уверены, что хотите удалить этого пользователя?</p>
+        </div>
+        <form id="delete-form" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="delete-cancel">Отмена</button>
+                <button type="submit" class="btn btn-danger" id="delete-confirm">Удалить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Уведомление -->
+<div class="notification" id="notification"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-extra.js') }}"></script>
+<script>
+// Навигация по разделам
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const contentId = this.dataset.content;
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+        
+        this.classList.add('active');
+        document.getElementById(contentId + '-content').classList.add('active');
+    });
+});
+
+const userModal = document.getElementById('user-modal');
+const deleteModal = document.getElementById('delete-modal');
+const groupModal = document.getElementById('group-modal');
+
+// Открытие модального окна редактирования
+document.querySelectorAll('.edit-user').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const fullname = this.dataset.fullname;
+        const email = this.dataset.email;
+        const groupId = this.dataset.group;
+        const role = this.dataset.role;
+        
+        document.getElementById('user-id').value = userId;
+        document.getElementById('user-fullname').value = fullname;
+        document.getElementById('user-email').value = email;
+        document.getElementById('user-group').value = groupId;
+        document.getElementById('user-role').value = role;
+        
+        // ✅ ИСПРАВЛЕНО: правильный URL
+        document.getElementById('user-form').action = `/admin/users/${userId}/update`;
+        userModal.classList.add('active');
+    });
+});
+
+// Открытие модального окна удаления
+document.querySelectorAll('.delete-user').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const username = this.dataset.username;
+        
+        document.getElementById('delete-message').textContent = 
+            `Вы уверены, что хотите удалить пользователя "${username}"? Это действие нельзя отменить.`;
+        
+        document.getElementById('delete-form').action = `/admin/users/${userId}/delete`;
+        
+        deleteModal.classList.add('active');
+    });
+});
+
+// Создание группы
+document.getElementById('add-group-btn').addEventListener('click', () => {
+    groupModal.classList.add('active');
+});
+
+// Закрытие модальных окон
+document.querySelectorAll('.modal-close, #modal-cancel, #delete-cancel, #group-modal-cancel').forEach(btn => {
+    btn.addEventListener('click', function() {
+        userModal.classList.remove('active');
+        deleteModal.classList.remove('active');
+        groupModal.classList.remove('active');
+    });
+});
+
+// Закрытие по клику вне окна
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
+    }
+});
+</script>
+{% endblock %}

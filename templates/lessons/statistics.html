@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика урока - {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 60px auto; padding: 0 20px;">
+    <!-- Заголовок -->
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; margin-bottom: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <div style="margin-bottom: 20px;">
+            <a href="{{ url_for('lessons.detail', lesson_id=lesson.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к уроку</a>
+        </div>
+        
+        <h1 style="font-size: 32px; font-weight: 700; color: #081844; margin-bottom: 10px;">
+            📊 Статистика урока
+        </h1>
+        <p style="color: #666; font-size: 18px; margin-bottom: 0;">{{ lesson.title }}</p>
+        <p style="color: #888; font-size: 14px;">Курс: <a href="{{ url_for('courses.detail', course_id=lesson.course_id) }}" style="color: #12A0F4; text-decoration: none;">{{ lesson.course.title }}</a></p>
+    </div>
+    
+    <!-- Общая статистика -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 25px; border-radius: 15px; text-align: center;">
+            <div style="font-size: 36px; font-weight: 700; color: #1976d2;">{{ total_students }}</div>
+            <div style="color: #666; font-size: 14px; margin-top: 5px;">Всего студентов</div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 25px; border-radius: 15px; text-align: center;">
+            <div style="font-size: 36px; font-weight: 700; color: #4CAF50;">{{ completed_count }}</div>
+            <div style="color: #666; font-size: 14px; margin-top: 5px;">Завершили урок</div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, {% if completion_rate >= 70 %}#e8f5e9, #c8e6c9{% elif completion_rate >= 40 %}#fff3e0, #ffe0b2{% else %}#ffebee, #ffcdd2{% endif %}); padding: 25px; border-radius: 15px; text-align: center;">
+            <div style="font-size: 36px; font-weight: 700; color: {% if completion_rate >= 70 %}#4CAF50{% elif completion_rate >= 40 %}#FF9800{% else %}#f44336{% endif %};">{{ completion_rate }}%</div>
+            <div style="color: #666; font-size: 14px; margin-top: 5px;">Процент прохождения</div>
+        </div>
+    </div>
+    
+    <!-- Прогресс-бар -->
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-weight: 600; color: #081844;">Прогресс прохождения</span>
+            <span style="color: #666;">{{ completed_count }} / {{ total_students }}</span>
+        </div>
+        <div style="height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <div style="height: 100%; width: {{ completion_rate }}%; background: linear-gradient(90deg, #4CAF50, #81C784); border-radius: 10px; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+    
+    <!-- Список студентов -->
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);">
+        <h2 style="font-size: 22px; font-weight: 700; color: #081844; margin-bottom: 20px;">
+            👥 Студенты, завершившие урок ({{ completed_count }})
+        </h2>
+        
+        {% if students_progress %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f5f5f5;">
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0;">Студент</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0;">Email</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0;">Дата завершения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in students_progress %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                {% if item.user.avatar_filename %}
+                                <img src="{{ url_for('lessons.serve_file', filename=item.user.avatar_filename) }}" 
+                                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #12A0F4, #0A5D8E); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                    {{ item.user.fullname[0] if item.user.fullname else '?' }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div style="font-weight: 600; color: #081844;">{{ item.user.fullname }}</div>
+                                    <div style="font-size: 12px; color: #888;">@{{ item.user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 15px; color: #666;">{{ item.user.email }}</td>
+                        <td style="padding: 15px; color: #666;">
+                            {% if item.completed_at %}
+                                {{ item.completed_at.strftime('%d.%m.%Y в %H:%M') }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;">📭</div>
+            <p>Пока никто не завершил этот урок</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

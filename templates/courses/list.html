@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Курсы - СКР Digital{% endblock %}
+
+{% block content %}
+<div class="courses-controls-wrapper">
+    <div class="courses-controls container">
+        <div class="search-box">
+            <form method="get" action="{{ url_for('courses.list') }}">
+                <input type="text" name="search" placeholder="🔍 Поиск курсов..." value="{{ search or '' }}">
+            </form>
+        </div>
+        <div class="courses-tabs">
+            <ul>
+                <li class="{{ 'active' if filter_by == 'all' or not filter_by }}"><a href="{{ url_for('courses.list') }}">Все курсы</a></li>
+                {% if current_user %}
+                    <li class="{{ 'active' if filter_by == 'favorites' }}"><a href="{{ url_for('user.favorites') }}">Избранное</a></li>
+                    {% if current_user.role in ['teacher', 'admin'] %}
+                        <li class="{{ 'active' if filter_by == 'my' }}"><a href="{{ url_for('courses.my_courses') }}">Мои курсы</a></li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="courses-container container">
+    {% if courses_data %}
+        {% for course_data in courses_data %}
+        <div class="course-card" style="border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; position: relative;">
+            <div style="position: relative; overflow: hidden; height: 220px;">
+                {% if course_data.course.preview_filename %}
+                    <img src="{{ url_for('lessons.serve_file', filename=course_data.course.preview_filename) }}" 
+                         alt="{{ course_data.course.title }}"
+                         style="width: 100%; height: 100%; object-fit: contain; background: #fff; transition: transform 0.3s ease;">
+                {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #12A0F4 0%, #0A5D8E 100%); display: flex; align-items: center; justify-content: center; font-size: 64px;">
+                        📚
+                    </div>
+                {% endif %}
+                
+                <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+                    {% if current_user %}
+                    <form method="post" action="{{ url_for('courses.toggle_favorite', course_id=course_data.course.id) }}" style="display: inline; margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" 
+                                style="background: rgba(255, 255, 255, 0.95); border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); transition: all 0.3s ease; color: {{ '#FFD700' if course_data.is_favorite else '#999' }};"
+                                title="{{ 'Убрать из избранного' if course_data.is_favorite else 'Добавить в избранное' }}">
+                            {{ '★' if course_data.is_favorite else '☆' }}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                
+                {% if course_data.course.category %}
+                <div style="position: absolute; top: 15px; left: 15px;">
+                    <span style="background: linear-gradient(135deg, {{ course_data.course.category.color or '#12A0F4' }}, {{ course_data.course.category.color or '#0A5D8E' }}); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
+                        {{ course_data.course.category.name }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div style="padding: 25px;">
+                <h3 class="course-title" style="font-size: 22px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; min-height: 56px;">
+                    {{ course_data.course.title }}
+                </h3>
+                
+                <p class="course-description" style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 20px; min-height: 44px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{ course_data.course.description[:120] + '...' if course_data.course.description and course_data.course.description|length > 120 else course_data.course.description or 'Описание отсутствует' }}
+                </p>
+                
+                <div class="course-meta" style="display: flex; gap: 20px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #666;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 18px;">📖</span>
+                        <span><strong>{{ course_data.lesson_count }}</strong> урок{{ 'ов' if course_data.lesson_count != 1 else '' }}</span>
+                    </span>
+                    {% if course_data.test_count > 0 %}
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 18px;">📝</span>
+                            <span><strong>{{ course_data.test_count }}</strong> тест{{ 'ов' if course_data.test_count != 1 else '' }}</span>
+                        </span>
+                    {% endif %}
+                </div>
+                
+                {% if current_user and course_data.progress %}
+                <div class="course-progress" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                        <span style="color: #666; font-weight: 600;">Прогресс</span>
+                        <span style="color: #12A0F4; font-weight: 700;">{{ course_data.progress.percent }}%</span>
+                    </div>
+                    <div style="height: 8px; background: #e8f4f8; border-radius: 10px; overflow: hidden; position: relative;">
+                        <div class="progress-fill" 
+                            style="height: 100%; background: linear-gradient(90deg, #12A0F4, #0A5D8E); width: {{ course_data.progress.percent }}%; border-radius: 10px; transition: width 0.8s ease-out; position: relative;">
+                            <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 20px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));"></div>
+                        </div>
+                    </div>
+                    <!-- Детализация -->
+                    <div style="display: flex; gap: 15px; margin-top: 8px; font-size: 12px; color: #888;">
+                        <span>📖 {{ course_data.progress.lessons_completed }}/{{ course_data.progress.lessons_total }}</span>
+                        {% if course_data.progress.tests_total > 0 %}
+                        <span>📝 {{ course_data.progress.tests_completed }}/{{ course_data.progress.tests_total }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="course-footer" style="display: flex; gap: 10px; align-items: center;">
+                    <a href="{{ url_for('courses.detail', course_id=course_data.course.id) }}" 
+                       class="enroll-btn"
+                       style="flex: 1; padding: 14px 20px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-align: center; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        {% if current_user and course_data.progress and course_data.progress.percent > 0 %}
+                            <span>Продолжить</span>
+                            <span>→</span>
+                        {% else %}
+                            <span>Перейти к курсу</span>
+                            <span>→</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state" style="text-align: center; padding: 100px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); margin: 40px auto; max-width: 600px;">
+            <div style="font-size: 80px; margin-bottom: 30px; animation: float 3s ease-in-out infinite;">📚</div>
+            <h2 style="font-size: 32px; color: #081844; margin-bottom: 15px; font-weight: 700;">Курсы пока не созданы</h2>
+            <p style="color: #666; font-size: 18px; margin-bottom: 40px; line-height: 1.6;">
+                {% if current_user and current_user.role in ['teacher', 'admin'] %}
+                    Станьте первым, кто создаст курс! Создайте увлекательный курс и начните обучать студентов.
+                {% else %}
+                    Пока нет доступных курсов. Ожидайте, пока преподаватели добавят новые курсы.
+                {% endif %}
+            </p>
+            {% if current_user and current_user.role in ['teacher', 'admin'] %}
+                <a href="{{ url_for('courses.create') }}" 
+                   class="btn"
+                   style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(18, 160, 244, 0.3);">
+                    + Создать первый курс
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.course-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.course-card:hover img {
+    transform: scale(1.05);
+}
+
+.course-card .favorite-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.enroll-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(18, 160, 244, 0.4);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+.courses-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+    padding: 40px 0;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .courses-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+</style>
+{% endblock %}

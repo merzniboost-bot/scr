@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить урок - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+<style>
+    .color-button {
+        color: #12A0F4 !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+        width: 30px !important;
+        height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 4px !important;
+        transition: all 0.2s !important;
+    }
+    
+    .color-button:hover {
+        background: #f0f0f0 !important;
+        color: #0A5D8E !important;
+    }
+
+    /* Фикс смещения и невидимых символов в редакторе */
+    .EasyMDEContainer {
+        max-width: 100%;
+    }
+
+    .editor-toolbar {
+        position: sticky;
+        top: 60px;
+        background: #ffffff;
+        border: 1px solid #d9d9d9;
+        border-radius: 10px 10px 0 0;
+        z-index: 5;
+    }
+
+    .editor-toolbar a,
+    .editor-toolbar button {
+        color: #0A5D8E !important;
+    }
+
+    .CodeMirror {
+        min-height: 320px;
+        font-size: 15px;
+        line-height: 1.6;
+        background: #ffffff;
+        color: #081844;
+        border: 1px solid #d9d9d9;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .CodeMirror-scroll {
+        min-height: 280px;
+    }
+
+    .editor-statusbar {
+        border: 1px solid #d9d9d9;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        background: #fafafa;
+    }
+
+    .editor-preview,
+    .editor-preview-side {
+        background: #ffffff;
+        color: #081844;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 60px auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 30px;">
+            <a href="{{ url_for('courses.detail', course_id=course.id) }}" style="color: #12A0F4; text-decoration: none; font-weight: 600;">← Назад к курсу</a>
+        </div>
+        
+        <h1 style="font-size: 36px; margin-bottom: 10px; color: #081844;">Добавить урок</h1>
+        <p style="color: #666; margin-bottom: 30px;">Курс: {{ course.title }}</p>
+        
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Название урока *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       required 
+                       minlength="3"
+                       value="{{ form_data.get('title', '') if form_data else '' }}"
+                       placeholder="Например: Введение в Python"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="order" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Порядковый номер *</label>
+                <input type="number" 
+                       id="order" 
+                       name="order" 
+                       required 
+                       min="1"
+                       value="{{ form_data.get('order', next_order) if form_data else next_order }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Определяет порядок урока в курсе</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="open_at" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                    Дата и время открытия урока
+                    <small style="color: #666; font-weight: normal;">(по МСК, оставьте пустым — доступен сразу)</small>
+                </label>
+                <input type="datetime-local" 
+                       id="open_at" 
+                       name="open_at" 
+                       value="{{ form_data.get('open_at', '') if form_data else '' }}"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">
+                    Студенты увидят урок только после указанного времени. Удобно для курсов по расписанию.
+                </small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="content" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Содержание урока</label>
+                <textarea id="content" 
+                          name="content" 
+                          rows="10"
+                          placeholder="Опишите содержание урока, добавьте теорию, примеры..."
+                          style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; resize: vertical;">{{ form_data.get('content', '') if form_data else '' }}</textarea>
+                <small style="color: #666; margin-top: 6px; display: block;">Используйте редактор для форматирования: заголовки, списки, ссылки, цитаты, код.</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="video" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Видео урока</label>
+                <input type="file" 
+                       id="video" 
+                       name="video" 
+                       accept="video/*"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">Форматы: MP4, AVI, MOV, WEBM. Максимальный размер: 500 МБ</small>
+                <div style="margin-top: 10px;">
+                    <label for="video_link" style="display: block; margin-bottom: 6px; font-weight: 600; color: #333;">Или ссылка на YouTube / RuTube</label>
+                    <input type="url"
+                           id="video_link"
+                           name="video_link"
+                           value="{{ form_data.get('video_link', '') if form_data else '' }}"
+                           placeholder="https://youtu.be/..."
+                           style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="file" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Дополнительные материалы</label>
+                <input type="file" 
+                       id="file" 
+                       name="file" 
+                       accept=".pdf,.doc,.docx,.txt,.zip,.rar,.ppt,.pptx"
+                       style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                <small style="color: #666; margin-top: 5px; display: block;">PDF, DOC, ZIP и другие файлы для скачивания</small>
+                <div style="margin-top: 10px;">
+                    <label for="file_link" style="display: block; margin-bottom: 6px; font-weight: 600; color: #333;">Или ссылка на материал (Google Drive, сайт и т.д.)</label>
+                    <input type="url"
+                           id="file_link"
+                           name="file_link"
+                           value="{{ form_data.get('file_link', '') if form_data else '' }}"
+                           placeholder="https://..."
+                           style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 16px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Создать урок
+                </button>
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" 
+                   style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const textarea = document.getElementById('content');
+    if (!textarea) return;
+    
+    const escapeHtml = (text) => text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    
+    // Массив цветов для быстрого выбора
+    const colorPalette = [
+        { name: 'красный', code: '#FF0000' },
+        { name: 'синий', code: '#0000FF' },
+        { name: 'зеленый', code: '#008000' },
+        { name: 'оранжевый', code: '#FFA500' },
+        { name: 'фиолетовый', code: '#800080' },
+        { name: 'черный', code: '#000000' },
+        { name: 'серый', code: '#666666' },
+    ];
+    
+    // Функция для вставки цветного текста
+    function insertColoredText(colorCode) {
+        const editor = easyMDE.codemirror;
+        const selection = editor.getSelection();
+        
+        if (selection) {
+            editor.replaceSelection(`<span style="color: ${colorCode}">${selection}</span>`);
+        } else {
+            editor.replaceSelection(`<span style="color: ${colorCode}">цветной текст</span>`);
+        }
+    }
+    
+    // Создаем кнопку палитры
+    const colorButton = {
+        name: 'color-palette',
+        action: function(editor) {
+            const palette = document.createElement('div');
+            palette.style.cssText = `
+                position: absolute;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                z-index: 1000;
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            colorPalette.forEach(color => {
+                const colorBtn = document.createElement('button');
+                colorBtn.style.cssText = `
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    background: ${color.code};
+                    border: 2px solid ${color.code === '#000000' ? '#ccc' : 'transparent'};
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                `;
+                colorBtn.title = color.name;
+                
+                colorBtn.addEventListener('mouseenter', () => {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.borderColor = '#333';
+                });
+                
+                colorBtn.addEventListener('mouseleave', () => {
+                    colorBtn.style.transform = 'scale(1)';
+                    colorBtn.style.borderColor = color.code === '#000000' ? '#ccc' : 'transparent';
+                });
+                
+                colorBtn.addEventListener('click', () => {
+                    insertColoredText(color.code);
+                    document.body.removeChild(palette);
+                });
+                
+                palette.appendChild(colorBtn);
+            });
+            
+            document.body.appendChild(palette);
+            
+            const toolbar = document.querySelector('.editor-toolbar');
+            const colorBtnElement = toolbar.querySelector('[title*="Цвет"]');
+            const rect = colorBtnElement ? colorBtnElement.getBoundingClientRect() : toolbar.getBoundingClientRect();
+            
+            palette.style.top = (rect.bottom + window.scrollY) + 'px';
+            palette.style.left = (rect.left + window.scrollX - 80) + 'px';
+            
+            setTimeout(() => {
+                document.addEventListener('click', function closePalette(e) {
+                    if (!palette.contains(e.target)) {
+                        if (document.body.contains(palette)) {
+                            document.body.removeChild(palette);
+                        }
+                        document.removeEventListener('click', closePalette);
+                    }
+                });
+            }, 0);
+        },
+        className: 'fas fa-fill-drip',
+        title: 'Цвет текста'
+    };
+    
+    // Кнопка блока кода (plain)
+    const codeBlockButton = {
+        name: 'plain-code-block',
+        action: function() {
+            const editor = easyMDE.codemirror;
+            const selection = editor.getSelection();
+            const content = selection ? escapeHtml(selection) : 'код';
+            editor.replaceSelection(`<pre><code>${content}</code></pre>`);
+        },
+        className: 'fas fa-code',
+        title: 'Блок кода (без Markdown)'
+    };
+    
+    // Кнопка подчёркивания
+    const underlineButton = {
+        name: 'underline',
+        action: function() {
+            const editor = easyMDE.codemirror;
+            const selection = editor.getSelection();
+            if (selection) {
+                editor.replaceSelection(`__${selection}__`);
+            } else {
+                const cursor = editor.getCursor();
+                editor.replaceSelection('__текст__');
+                editor.setCursor(cursor.line, cursor.ch + 2);
+            }
+        },
+        className: 'fas fa-underline',
+        title: 'Подчёркивание (__текст__)'
+    };
+    
+    // Инициализация EasyMDE
+    const easyMDE = new EasyMDE({
+        element: textarea,
+        spellChecker: false,
+        status: false,
+        placeholder: 'Напишите содержание урока...',
+        toolbar: [
+            'undo', 'redo', '|',
+            'heading', 'bold', 'italic', underlineButton, 'strikethrough', '|',
+            colorButton,
+            '|',
+            'quote', 'code', codeBlockButton, 'unordered-list', 'ordered-list', 'table', '|',
+            'link', 'image', '|',
+            'preview', 'side-by-side', '|',
+            'guide'
+        ],
+        autoDownloadFontAwesome: true,
+    });
+});
+</script>
+{% endblock %}

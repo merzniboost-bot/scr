@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Мой профиль - СКР Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Сайдбар -->
+    <div class="dashboard-sidebar">
+        <div class="sidebar-back">
+            <a href="{{ url_for('home') }}" class="back-button">← Назад</a>
+        </div>
+        
+        <!-- Карточка профиля -->
+        <div class="profile-card-sidebar">
+            <div class="profile-avatar-sidebar" id="userAvatar">
+                {% if current_user.avatar_filename %}
+                    <img src="{{ url_for('lessons.serve_file', filename=current_user.avatar_filename) }}" alt="Фото профиля" style="width: 100%; height: 100%; border-radius: 50%; object-fit: contain;">
+                {% else %}
+                    {{ current_user.fullname[:1]|upper if current_user.fullname else 'П' }}
+                {% endif %}
+            </div>
+            <h3>{{ current_user.fullname }}</h3>
+            <p class="profile-role">
+                {% if current_user.role == 'admin' %}
+                    Администратор
+                {% elif current_user.role == 'teacher' %}
+                    Преподаватель
+                {% else %}
+                    Студент
+                {% endif %}
+            </p>
+            {% if current_user.position %}
+                <p class="profile-label">{{ current_user.position }}</p>
+            {% endif %}
+            
+            <!-- Кнопка "Профиль" -->
+            <button class="profile-button-sidebar" id="openProfileModal">
+                Профиль
+            </button>
+        </div>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="dashboard-main">
+        <div class="dashboard-content">
+            <h1 class="dashboard-title">
+                {% if current_user.role in ['teacher', 'admin'] %}
+                    Мои курсы
+                {% else %}
+                    Изучаю
+                {% endif %}
+            </h1>
+
+            <div class="courses-grid-dashboard">
+                {% if course_stats %}
+                    {% for item in course_stats[:4] %}
+                    <div class="course-card-dashboard">
+                        <div class="course-card-header">
+                            <span class="course-category-badge">ОБУЧЕНИЕ</span>
+                        </div>
+                        
+                        <div class="course-card-image">
+                            {% if item.course.preview_filename %}
+                                <img src="{{ url_for('lessons.serve_file', filename=item.course.preview_filename) }}" 
+                                     alt="{{ item.title }}">
+                            {% else %}
+                                <div class="course-icon-placeholder">📚</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="course-card-content">
+                            <h3 class="course-card-title">{{ item.title }}</h3>
+                            <p class="course-card-description">
+                                {{ item.description[:80] + '...' if item.description and item.description|length > 80 else item.description or 'Описание отсутствует' }}
+                            </p>
+                            
+                            <div class="course-card-meta">
+                                <span class="course-lessons">📁 {{ item.total_lessons }} урок{{ 'ов' if item.total_lessons != 1 else '' }}</span>
+                            </div>
+                            
+                            <a href="{{ url_for('courses.detail', course_id=item.course_id) }}" class="course-card-button">
+                                Открыть →
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-courses-message">
+                        <p>
+                            {% if current_user.role in ['teacher', 'admin'] %}
+                                У вас пока нет созданных курсов
+                            {% else %}
+                                Вы еще не начали изучение курсов
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('courses.list') }}" class="btn">
+                            {% if current_user.role in ['teacher', 'admin'] %}
+                                Создать курс
+                            {% else %}
+                                Перейти к курсам
+                            {% endif %}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if course_stats|length > 4 %}
+            <a href="{{ url_for('user.progress') }}" class="next-page-button">Показать все курсы →</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+    
+            <!-- Статистика -->
+            {% if stats %}
+            <div class="stats-section-dashboard">
+                <h2 class="stats-title">Моя статистика</h2>
+                <div class="stats-grid-dashboard">
+                    <div class="stat-card-dashboard">
+                        <div class="stat-number-dashboard">{{ stats.total_courses }}</div>
+                        <div class="stat-label-dashboard">
+                            {% if current_user.role in ['teacher', 'admin'] %}
+                                Создано курсов
+                            {% else %}
+                                Изучаю курсов
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-dashboard">
+                        <div class="stat-number-dashboard">{{ stats.completed_lessons }}</div>
+                        <div class="stat-label-dashboard">Завершено уроков</div>
+                    </div>
+                    
+                    <div class="stat-card-dashboard">
+                        <div class="stat-number-dashboard">{{ stats.overall_progress }}%</div>
+                        <div class="stat-label-dashboard">Общий прогресс</div>
+                    </div>
+                    
+                    <div class="stat-card-dashboard">
+                        <div class="stat-number-dashboard">{{ stats.favorite_count }}</div>
+                        <div class="stat-label-dashboard">В избранном</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Последние результаты тестов -->
+            {% if recent_tests %}
+            <div class="recent-tests-dashboard">
+                <h2 class="tests-title">Последние тесты</h2>
+                <div class="tests-list-dashboard">
+                    {% for item in recent_tests %}
+                    <div class="test-item-dashboard">
+                        <div class="test-info-dashboard">
+                            <h4 class="test-title-dashboard">{{ item.test.title }}</h4>
+                            <p class="test-course-dashboard">{{ item.course.title }}</p>
+                        </div>
+                        <div class="test-score-dashboard {{ 'good' if item.percent >= 75 else 'bad' }}">
+                            {{ item.result.score }}/{{ item.result.total }} ({{ item.percent }}%)
+                        </div>
+                        <div class="test-date-dashboard">
+                            {{ item.result.created_at.strftime('%d.%m.%Y') if item.result.created_at else '' }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно профиля -->
+<div class="profile-modal" id="profileModal">
+    <div class="profile-modal-content">
+        <span class="close-modal" id="closeModal">&times;</span>
+        <h2>Редактирование профиля</h2>
+        
+        <form class="profile-form" method="post" action="{{ url_for('user.edit_profile') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="avatar-upload">
+                <div class="avatar-preview" id="avatarPreview">
+                    {% if current_user.avatar_filename %}
+                        <img src="{{ url_for('lessons.serve_file', filename=current_user.avatar_filename) }}" alt="Фото профиля" style="width: 100%; height: 100%; border-radius: 50%; object-fit: contain;">
+                    {% else %}
+                        <span>{{ current_user.fullname[:1]|upper if current_user.fullname else 'П' }}</span>
+                    {% endif %}
+                </div>
+                <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display: none;">
+                <button type="button" class="upload-btn" id="uploadBtn">Загрузить фото</button>
+                {% if current_user.avatar_filename %}
+                <label class="upload-hint" style="display: block; margin-top: 8px; font-size: 13px; color: #666;">
+                    <input type="checkbox" name="delete_avatar" value="true" style="margin-right: 6px;">
+                    Удалить текущее фото
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">ФИО</label>
+                <input type="text" id="fullName" name="fullname" value="{{ current_user.fullname }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="position">Должность / Специализация</label>
+                <input type="text" id="position" name="position" 
+                       value="{{ current_user.position or '' }}" 
+                       placeholder="Например: Преподаватель программирования">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" value="{{ current_user.email }}" disabled>
+                <small>Email нельзя изменить</small>
+            </div>
+            
+            <button type="submit" class="save-btn">Сохранить изменения</button>
+        </form>
+        
+        <div class="additional-actions">
+            <a href="{{ url_for('user.change_password') }}" class="link-btn">Изменить пароль</a>
+            <a href="{{ url_for('user.statistics') }}" class="link-btn">Детальная статистика</a>
+        </div>
+    </div>
+    </div>
+</div>
+
+<style>
+.course-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.course-card:hover img {
+    transform: scale(1.05);
+}
+
+.enroll-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(18, 160, 244, 0.4);
+}
+
+@media (max-width: 768px) {
+    .courses-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Код для модального окна
+    const modal = document.getElementById('profileModal');
+    const openBtn = document.getElementById('openProfileModal');
+    const closeBtn = document.getElementById('closeModal');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+
+    openBtn.addEventListener('click', function() {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    });
+
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    });
+
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    uploadBtn.addEventListener('click', function() {
+        avatarInput.click();
+    });
+
+    avatarInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">`;
+                const userAvatar = document.getElementById('userAvatar');
+                userAvatar.innerHTML = `<img src="${e.target.result}" alt="Avatar" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+</script>
+{% endblock %}
