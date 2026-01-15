@@ -336,3 +336,19 @@ class Submission(db.Model):
 
     def __repr__(self):
         return f'<Submission assignment={self.assignment_id} student={self.student_id}>'
+
+
+class ErrorLog(db.Model):
+    """Логи ошибок приложения"""
+    __tablename__ = 'error_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=now_msk, index=True)
+    level = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    request_id = db.Column(db.String(64))
+    path = db.Column(db.String(255))
+    stack = db.Column(db.Text)
+
+    def __repr__(self):
+        return f'<ErrorLog {self.level} {self.path}>'

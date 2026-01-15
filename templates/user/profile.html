@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Профиль - СКР Digital{% endblock %}
+{% block title %}Профиль - Симферопольский Колледж Радиоэлектроники{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 900px; margin: 60px auto; padding: 40px 20px;">
@@ -70,10 +70,6 @@
         </div>
         
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <a href="{{ url_for('user.edit_profile') }}" 
-               style="flex: 1; min-width: 200px; padding: 14px; background: linear-gradient(135deg, #0A5D8E, #12A0F4); color: white; text-align: center; border-radius: 10px; text-decoration: none; font-weight: 600;">
-                Редактировать профиль
-            </a>
             <a href="{{ url_for('user.change_password') }}" 
                style="flex: 1; min-width: 200px; padding: 14px; background: #f0f0f0; color: #333; text-align: center; border-radius: 10px; text-decoration: none; font-weight: 600;">
                 Изменить пароль

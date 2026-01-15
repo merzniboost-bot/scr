@@ -249,61 +249,45 @@
             <div class="progress-fill" id="progress-fill" style="width: {{ progress.percent }}%;"></div>
         </div>
 
-        {% set current_module = '' %}
-
-        {% for course_lesson in lesson.course.lessons %}
-            {% set lesson_module = 'МОДУЛЬ ' ~ ((loop.index - 1) // 4 + 1) %}
-
-            {% if lesson_module != current_module %}
-                {% if not loop.first %}
-                    </div>
-                {% endif %}
-
-                <div class="module">
-                    <div class="module-title">{{ lesson_module }}</div>
-
-                {% set current_module = lesson_module %}
-            {% endif %}
-
-            <div class="lesson-item {% if course_lesson.id == lesson.id %}active{% endif %} {% if lesson_progress and lesson_progress.get(course_lesson.id) %}completed{% endif %}"
-                 data-lesson="{{ course_lesson.order }}">
-                <a href="{{ url_for('lessons.detail', lesson_id=course_lesson.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <div class="lesson-content">
-                        <span class="lesson-number">{{ course_lesson.order }}</span>
-                        <span class="lesson-name">{{ course_lesson.title }}</span>
-                        {% if lesson_progress and lesson_progress.get(course_lesson.id) %}
-                            <span class="lesson-check">✓</span>
-                        {% endif %}
-                    </div>
-                    <span class="lesson-duration">
-                        {% if course_lesson.video_filename %}📹{% endif %}
-                        {% if course_lesson.file_filename %}📎{% endif %}
-                    </span>
-                </a>
-            </div>
-
-            {% if loop.last %}
-                </div>
-            {% endif %}
-        {% endfor %}
-
-        <!-- Тесты курса -->
-        {% if lesson.course.tests %}
-            <div class="module">
-                <div class="module-title">ТЕСТИРОВАНИЕ</div>
-                {% for test in lesson.course.tests %}
-                    <div class="lesson-item test-item">
-                        <a href="{{ url_for('tests.take', test_id=test.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="module">
+            <div class="module-title">Программа курса</div>
+            {% for item in all_materials %}
+                {% if item.type == 'lesson' %}
+                    {% set obj = item.obj %}
+                    <div class="lesson-item {% if obj.id == lesson.id %}active{% endif %} {% if lesson_progress_map and lesson_progress_map.get(obj.id) %}completed{% endif %}"
+                         data-lesson="{{ item.order }}">
+                        <a href="{{ url_for('lessons.detail', lesson_id=obj.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <div class="lesson-content">
-                                <span class="lesson-number">📝</span>
-                                <span class="lesson-name">{{ test.title }}</span>
+                                <span class="lesson-number">{{ item.order }}</span>
+                                <span class="lesson-name">{{ obj.title }}</span>
+                                {% if lesson_progress_map and lesson_progress_map.get(obj.id) %}
+                                    <span class="lesson-check">✓</span>
+                                {% endif %}
                             </div>
-                            <span class="lesson-duration">{{ test.questions|length }} вопр.</span>
+                            <span class="lesson-duration">
+                                {% if obj.video_filename %}📹{% endif %}
+                                {% if obj.file_filename %}📎{% endif %}
+                            </span>
                         </a>
                     </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+                {% else %}
+                    {% set obj = item.obj %}
+                    {% set test_state = test_progress_map.get(obj.id) if test_progress_map else None %}
+                    <div class="lesson-item test-item {% if test_state and test_state.completed %}completed{% endif %}">
+                        <a href="{{ url_for('tests.take', test_id=obj.id) }}" style="text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="lesson-content">
+                                <span class="lesson-number">📝</span>
+                                <span class="lesson-name">{{ obj.title }}</span>
+                                {% if test_state and test_state.completed %}
+                                    <span class="lesson-check">✓</span>
+                                {% endif %}
+                            </div>
+                            <span class="lesson-duration">{{ obj.questions|length if obj.questions else 0 }} вопр.</span>
+                        </a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
 
         {% if lesson.video_filename %}
         <div class="meta-item">

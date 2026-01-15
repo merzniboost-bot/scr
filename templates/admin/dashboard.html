@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Центр управления - СКР Digital{% endblock %}
+{% block title %}Центр управления - Симферопольский Колледж Радиоэлектроники{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
@@ -33,6 +33,9 @@
                 <div class="nav-item" data-content="groups">
                     <span>Группы</span>
                     <span class="count">{{ groups|length }}</span>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin.error_logs') }}" style="color: inherit; text-decoration: none;">Просмотр ошибок</a>
                 </div>
             </div>
             

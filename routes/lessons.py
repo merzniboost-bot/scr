@@ -12,6 +12,7 @@ from utils import (
     allowed_file,
     get_course_progress,
     get_lesson_progress_map,
+    get_test_progress_map,
     is_external_link,
     get_video_embed_url,
     markdown_to_html,
@@ -94,6 +95,7 @@ def detail(lesson_id):
         # Получаем прогресс по курсу
         course_progress = get_course_progress(user.id, lesson.course_id) if user else None
         lesson_progress_map = get_lesson_progress_map(user.id, lesson.course_id) if user else {}
+        test_progress_map = get_test_progress_map(user.id, lesson.course_id) if user else {}
         video_is_link = is_external_link(lesson.video_filename)
         file_is_link = is_external_link(lesson.file_filename)
         video_embed_url = get_video_embed_url(lesson.video_filename) if video_is_link else None
@@ -107,12 +109,15 @@ def detail(lesson_id):
                                prev_lesson=prev_lesson,
                                lesson_progress=lesson_progress_map,
                                course_progress=course_progress,
+                               lesson_progress_map=lesson_progress_map,
+                               test_progress_map=test_progress_map,
                                video_is_link=video_is_link,
                                file_is_link=file_is_link,
                                video_embed_url=video_embed_url,
                                content_rendered=content_rendered,
                                current_position=current_position,
-                               total_materials=len(all_materials))
+                               total_materials=len(all_materials),
+                               all_materials=all_materials)
 
     except Exception as e:
         logger.error(f"[LESSONS] ❌ Ошибка загрузки урока: {e}")

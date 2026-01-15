@@ -1514,10 +1514,10 @@ body.light-theme .enroll-btn:hover {
     --border-light: #E2E8F0;
 } */
 
-/* * {
+/* {
     margin: 0;
     padding: 0;
-    /*box-sizing: border-box;*/
+    box-sizing: border-box;
 } */
 
 body {
@@ -1536,7 +1536,6 @@ body.light-theme {
 a {
     transition: all 0.3s ease;
     cursor: pointer;
-    border-radius: 8px;
     font-weight: 500;
     font-size: 1rem;
     text-decoration: none;

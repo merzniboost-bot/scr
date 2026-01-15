@@ -3,7 +3,7 @@
 Маршруты админ-панели: управление пользователями, группами, общая статистика
 """
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session, jsonify
-from models import db, User, Group, Course, Lesson, Test, TestResult, UserProgress
+from models import db, User, Group, Course, Lesson, Test, TestResult, UserProgress, ErrorLog
 from decorators import admin_required
 import logging
 
@@ -216,6 +216,16 @@ def approve_user(user_id):
         flash('Ошибка при подтверждении пользователя', 'error')
 
     return redirect(request.referrer or url_for('admin.dashboard'))
+
+
+@admin_bp.route('/logs/errors')
+@admin_required
+def error_logs():
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    pagination = ErrorLog.query.order_by(ErrorLog.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    rows = pagination.items
+    return render_template('admin/errors.html', rows=rows, pagination=pagination)
 
 
 @admin_bp.route('/users/<int:user_id>/revoke', methods=['POST'])

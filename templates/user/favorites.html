@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Избранное - СКР Digital{% endblock %}
+{% block title %}Избранное - Симферопольский Колледж Радиоэлектроники{% endblock %}
 
 {% block content %}
 <div class="courses-controls-wrapper">
@@ -49,23 +49,13 @@
                         </form>
                     </div>
                     
+                    {% if item.course.category %}
                     <div style="position: absolute; top: 15px; left: 15px;">
-                        <span style="background: linear-gradient(135deg, #12A0F4, #0A5D8E); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
-                            {% if 'python' in item.course.title.lower() %}
-                                ПРОГРАММИРОВАНИЕ
-                            {% elif 'javascript' in item.course.title.lower() or 'js' in item.course.title.lower() %}
-                                ПРОГРАММИРОВАНИЕ
-                            {% elif 'html' in item.course.title.lower() or 'css' in item.course.title.lower() %}
-                                ВЕБ-РАЗРАБОТКА
-                            {% elif 'данн' in item.course.title.lower() or 'анализ' in item.course.title.lower() %}
-                                АНАЛИЗ ДАННЫХ
-                            {% elif 'дизайн' in item.course.title.lower() %}
-                                ДИЗАЙН
-                            {% else %}
-                                ОБУЧЕНИЕ
-                            {% endif %}
+                        <span style="background: linear-gradient(135deg, {{ item.course.category.color or '#12A0F4' }}, {{ item.course.category.color or '#0A5D8E' }}); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
+                            {{ item.course.category.name }}
                         </span>
                     </div>
+                    {% endif %}
                 </div>
                 
                 <div style="padding: 25px;">

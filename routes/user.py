@@ -554,31 +554,14 @@ def achievements():
 @user_bp.route('/profile')
 @login_required
 def profile():
-    """
-    Профиль пользователя
-    """
-    try:
-        user = db.session.get(User, session['user_id'])
-
-        # Общая статистика
-        stats = get_user_statistics(user.id)
-
-        return render_template('user/profile.html',
-                               user=user,
-                               stats=stats)
-
-    except Exception as e:
-        logger.error(f"[USER] ❌ Ошибка загрузки профиля: {e}")
-        flash('Ошибка загрузки профиля', 'error')
-        return redirect(url_for('user.dashboard'))
+    # Страница профиля устарела — перенаправляем в личный кабинет
+    return redirect(url_for('user.dashboard'))
 
 
 @user_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
-    """
-    Редактирование профиля
-    """
+    """Редактирование профиля"""
     user = db.session.get(User, session['user_id'])
 
     if request.method == 'POST':
@@ -632,7 +615,7 @@ def edit_profile():
             logger.info(f"[USER] ✏️ Профиль обновлен: {user.email}")
             flash('Профиль успешно обновлен', 'success')
 
-            return redirect(url_for('user.profile'))
+            return redirect(url_for('user.dashboard'))
 
         except Exception as e:
             db.session.rollback()

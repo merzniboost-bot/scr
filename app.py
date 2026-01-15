@@ -5,28 +5,23 @@
 """
 from dotenv import load_dotenv
 import os
+import sys
+import time
+import uuid
+import traceback
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Load environment variables from .env file
 load_dotenv()
-from flask import Flask, render_template, redirect, url_for, session, request, abort, flash
+from flask import Flask, render_template, redirect, url_for, session, request, abort, flash, g
 from flask_wtf.csrf import generate_csrf
 from config import config, BASE_DIR
-from models import db, bcrypt, User
+from models import db, bcrypt, User, ErrorLog
 from routes import register_blueprints
-# from utils import init_demo_data
-import logging
-import os
-# ============================================================================
-# ЛОГИРОВАНИЕ
-# ============================================================================
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 logger = logging.getLogger(__name__)
-
+# from utils import init_demo_data
 
 # ============================================================================
 # СОЗДАНИЕ ПРИЛОЖЕНИЯ
@@ -43,6 +38,55 @@ def create_app(config_name='development'):
         Flask приложение
     """
     app = Flask(__name__)
+
+    # ============================================================================
+    # ЛОГИРОВАНИЕ В ФАЙЛЫ (logs/app.log, logs/error.log)
+    # ============================================================================
+
+    logs_dir = BASE_DIR / "logs"
+    logs_dir.mkdir(exist_ok=True)
+
+    class RequestContextFilter(logging.Filter):
+        def filter(self, record):
+            try:
+                record.request_id = getattr(g, "request_id", "-")
+                record.path = getattr(request, "path", "-")
+                record.method = getattr(request, "method", "-")
+                record.remote_addr = request.headers.get("X-Forwarded-For", request.remote_addr)
+                record.user_id = session.get("user_id", "-")
+            except Exception:
+                record.request_id = "-"
+                record.path = "-"
+                record.method = "-"
+                record.remote_addr = "-"
+                record.user_id = "-"
+            for field, default in [
+                ("status", "-"),
+                ("duration_ms", "-"),
+            ]:
+                if not hasattr(record, field):
+                    setattr(record, field, default)
+            return True
+
+    log_format = '%(asctime)s [%(levelname)s] %(name)s request_id=%(request_id)s path=%(path)s method=%(method)s status=%(status)s duration_ms=%(duration_ms)s remote_addr=%(remote_addr)s user_id=%(user_id)s %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    app_handler = RotatingFileHandler(logs_dir / "app.log", maxBytes=10 * 1024 * 1024, backupCount=5)
+    app_handler.setLevel(logging.INFO)
+    app_handler.setFormatter(formatter)
+    app_handler.addFilter(RequestContextFilter())
+
+    error_handler = RotatingFileHandler(logs_dir / "error.log", maxBytes=10 * 1024 * 1024, backupCount=5)
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(formatter)
+    error_handler.addFilter(RequestContextFilter())
+
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(app_handler)
+    root_logger.addHandler(error_handler)
 
     # Загрузка конфигурации
     app.config.from_object(config[config_name])
@@ -86,6 +130,50 @@ def create_app(config_name='development'):
 
     # Регистрация Blueprint'ов
     register_blueprints(app)
+
+    # ========================================================================
+    # REQUEST ID + ЛОГИРОВАНИЕ ЗАПРОСОВ
+    # ========================================================================
+
+    @app.before_request
+    def add_request_context():
+        g.request_start = time.time()
+        g.request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+
+    @app.after_request
+    def log_request(response):
+        if request.path.startswith('/static') or response.status_code in (304, 204):
+            response.headers["X-Request-ID"] = g.get("request_id", "-")
+            return response
+
+        duration_ms = int((time.time() - g.get("request_start", time.time())) * 1000)
+        response.headers["X-Request-ID"] = g.get("request_id", "-")
+        app.logger.info(
+            "request",
+            extra={
+                "path": request.path,
+                "method": request.method,
+                "status": response.status_code,
+                "duration_ms": duration_ms,
+                "remote_addr": request.headers.get("X-Forwarded-For", request.remote_addr),
+                "user_id": session.get("user_id"),
+            },
+        )
+        return response
+
+    def log_error_to_db(level, message, path=None, stack=None):
+        try:
+            entry = ErrorLog(
+                level=level,
+                message=message,
+                request_id=g.get("request_id"),
+                path=path,
+                stack=stack,
+            )
+            db.session.add(entry)
+            db.session.commit()
+        except Exception as e:
+            logger.error("Failed to write ErrorLog: %s", e)
 
     # Контекстный процессор
     @app.context_processor
@@ -204,7 +292,39 @@ def create_app(config_name='development'):
     def internal_error(error):
         """Ошибка 500 - Внутренняя ошибка сервера"""
         db.session.rollback()
-        logger.error(f"[500] Внутренняя ошибка: {error}")
+        stack = traceback.format_exc()
+        log_error_to_db("ERROR", str(error), request.path, stack)
+        logger.exception(
+            "[500] Внутренняя ошибка: %s",
+            error,
+            extra={
+                "path": request.path,
+                "method": request.method,
+                "status": 500,
+                "duration_ms": "-",
+                "remote_addr": request.headers.get("X-Forwarded-For", request.remote_addr),
+                "user_id": session.get("user_id"),
+            },
+        )
+        return render_template('errors/500.html'), 500
+
+    @app.errorhandler(Exception)
+    def handle_unexpected(error):
+        db.session.rollback()
+        stack = traceback.format_exc()
+        log_error_to_db("ERROR", str(error), request.path, stack)
+        logger.exception(
+            "[UNHANDLED] %s",
+            error,
+            extra={
+                "path": request.path,
+                "method": getattr(request, "method", "-"),
+                "status": 500,
+                "duration_ms": "-",
+                "remote_addr": request.headers.get("X-Forwarded-For", request.remote_addr) if request else "-",
+                "user_id": session.get("user_id") if session else "-",
+            },
+        )
         return render_template('errors/500.html'), 500
 
     @app.errorhandler(429)

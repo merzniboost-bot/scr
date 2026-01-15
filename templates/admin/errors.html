@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Логи ошибок{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h4 mb-1">Последние ошибки</h1>
+            <p class="mb-0 text-muted">Показано {{ rows|length }} записей (страница {{ pagination.page }} из {{ pagination.pages or 1 }})</p>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('admin.dashboard') }}">← Назад в админку</a>
+    </div>
+
+    {% if rows %}
+    <div class="table-responsive" style="overflow-x:auto;">
+        <table class="table table-sm table-striped align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Время</th>
+                    <th scope="col">Уровень</th>
+                    <th scope="col">Путь</th>
+                    <th scope="col">Request ID</th>
+                    <th scope="col">Сообщение</th>
+                    <th scope="col" style="width: 110px;">Стек</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.created_at|datetime }}</td>
+                    <td>{{ row.level }}</td>
+                    <td>{{ row.path }}</td>
+                    <td>{{ row.request_id or '—' }}</td>
+                    <td style="white-space: pre-wrap; max-width: 420px;">{{ row.message }}</td>
+                    <td>
+                        {% if row.stack %}
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#stack-{{ row.id }}">Стек</button>
+                        <div class="collapse mt-2" id="stack-{{ row.id }}">
+                            <pre class="mb-0" style="white-space: pre-wrap; max-height: 260px; overflow:auto;">{{ row.stack }}</pre>
+                        </div>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="mt-3 d-flex justify-content-between">
+        {% if pagination.has_prev %}
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.error_logs', page=pagination.prev_num) }}">&larr; Предыдущая</a>
+        {% else %}
+            <span class="btn btn-outline-secondary btn-sm disabled">&larr; Предыдущая</span>
+        {% endif %}
+
+        <span class="text-muted">Страница {{ pagination.page }} / {{ pagination.pages or 1 }}</span>
+
+        {% if pagination.has_next %}
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.error_logs', page=pagination.next_num) }}">Следующая &rarr;</a>
+        {% else %}
+            <span class="btn btn-outline-secondary btn-sm disabled">Следующая &rarr;</span>
+        {% endif %}
+    </nav>
+    {% else %}
+        <p>Ошибок не найдено.</p>
+    {% endif %}
+</div>
+{% endblock %}
