@@ -60,6 +60,9 @@ class Config:
     LOG_FORMAT = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+    # Интеграции
+    YANDEX_METRIKA_ID = os.environ.get('YANDEX_METRIKA_ID')
+
 
 # Development & Production теперь одинаковые
 class DevelopmentConfig(Config):

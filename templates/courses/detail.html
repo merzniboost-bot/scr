@@ -354,6 +354,10 @@
                                        style="padding: 8px 16px; background: #fff3e0; color: #e65100; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">
                                         📝 Вопросы
                                     </a>
+                                    <a href="{{ url_for('tests.all_results', test_id=item.id) }}" 
+                                       style="padding: 8px 16px; background: #e8f5e9; color: #1b5e20; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                                        📊 Результаты
+                                    </a>
                                 </div>
                                 {% endif %}
                             {% endif %}

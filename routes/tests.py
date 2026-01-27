@@ -589,8 +589,12 @@ def all_results(test_id):
             .filter(TestResult.test_id == test_id) \
             .order_by(TestResult.created_at.desc()).all()
 
-        # Добавляем проценты
+        # Фильтр по группе (All/конкретная)
+        current_group = request.args.get('group', 'all')
+
+        # Добавляем проценты + группировка по учебным группам
         results_data = []
+        group_stats = {}
         for result, student in results:
             percent = int((result.score / result.total * 100)) if result.total > 0 else 0
             results_data.append({
@@ -599,21 +603,62 @@ def all_results(test_id):
                 'percent': percent
             })
 
-        # Статистика
-        total_attempts = len(results_data)
-        avg_score = sum(r['percent'] for r in results_data) / total_attempts if total_attempts > 0 else 0
+            # Накапливаем статистику по группе
+            group_name = student.group_rel.name if student.group_rel else 'Без группы'
+            if group_name not in group_stats:
+                group_stats[group_name] = {
+                    'attempts': 0,
+                    'sum_percent': 0,
+                    'max_percent': 0,
+                    'min_percent': 100
+                }
+            group_stats[group_name]['attempts'] += 1
+            group_stats[group_name]['sum_percent'] += percent
+            group_stats[group_name]['max_percent'] = max(group_stats[group_name]['max_percent'], percent)
+            group_stats[group_name]['min_percent'] = min(group_stats[group_name]['min_percent'], percent)
+
+        # Список групп для фильтра (только те, что есть в результатах)
+        groups_list = sorted(group_stats.keys())
+
+        # Применяем фильтр по группе для выводимых результатов
+        if current_group != 'all':
+            filtered_results = []
+            for item in results_data:
+                gname = item['student'].group_rel.name if item['student'].group_rel else 'Без группы'
+                if gname == current_group:
+                    filtered_results.append(item)
+        else:
+            filtered_results = results_data
+
+        # Статистика (по отфильтрованным данным)
+        total_attempts = len(filtered_results)
+        avg_score = sum(r['percent'] for r in filtered_results) / total_attempts if total_attempts > 0 else 0
 
         stats = {
             'total_attempts': total_attempts,
             'avg_score': int(avg_score),
-            'max_score': max((r['percent'] for r in results_data), default=0),
-            'min_score': min((r['percent'] for r in results_data), default=0)
+            'max_score': max((r['percent'] for r in filtered_results), default=0),
+            'min_score': min((r['percent'] for r in filtered_results), default=0)
         }
+
+        # Финализируем статистику по группам (средний процент)
+        groups_summary = []
+        for name, g in group_stats.items():
+            groups_summary.append({
+                'name': name,
+                'attempts': g['attempts'],
+                'avg_percent': int(g['sum_percent'] / g['attempts']) if g['attempts'] else 0,
+                'max_percent': g['max_percent'],
+                'min_percent': g['min_percent'] if g['attempts'] else 0
+            })
 
         return render_template('tests/all_results.html',
                                test=test,
-                               results_data=results_data,
-                               stats=stats)
+                               results_data=filtered_results,
+                               stats=stats,
+                               groups_summary=groups_summary,
+                               groups_list=groups_list,
+                               current_group=current_group)
 
     except Exception as e:
         logger.error(f"[TESTS] ❌ Ошибка загрузки результатов: {e}")

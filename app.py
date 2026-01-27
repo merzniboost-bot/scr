@@ -179,15 +179,16 @@ def create_app(config_name='development'):
     @app.context_processor
     def inject_user():
         """Внедрение текущего пользователя в шаблоны"""
+        yandex_id = app.config.get("YANDEX_METRIKA_ID")
         # Не делаем запросы к БД для статических файлов
         if request.path.startswith('/static'):
-            return dict(current_user=None, csrf_token=generate_csrf)
+            return dict(current_user=None, csrf_token=generate_csrf, yandex_metrika_id=yandex_id)
         
         if 'user_id' in session:
             user = db.session.get(User, session['user_id'])
             if user:
-                return dict(current_user=user, csrf_token=generate_csrf)
-        return dict(current_user=None, csrf_token=generate_csrf)
+                return dict(current_user=user, csrf_token=generate_csrf, yandex_metrika_id=yandex_id)
+        return dict(current_user=None, csrf_token=generate_csrf, yandex_metrika_id=yandex_id)
 
     # ========================================================================
     # ПРОВЕРКА АВТОРИЗАЦИИ ДЛЯ ВСЕХ МАРШРУТОВ
